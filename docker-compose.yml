@@ -1,0 +1,140 @@
+version: '3.8'
+
+services:
+  Analisis-Territorial-DB:
+    image: postgres:15-alpine
+    container_name: Analisis-Territorial-DB
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin}
+      POSTGRES_DB: ${POSTGRES_DB:-territorial_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - plataforma-net
+
+  configuration:
+    build: 
+      context: ./Backend/configuration
+      dockerfile: Dockerfile
+    container_name: configuration
+    ports:
+      - "8003:8003"
+    env_file:
+      - .env
+    depends_on:
+      db_postgres:
+        condition: service_healthy
+    networks:
+      - plataforma-net
+
+  ingestion:
+    build: 
+      context: ./Backend/ingestion
+      dockerfile: Dockerfile
+    container_name: ingestion
+    ports:
+      - "8001:8001"
+    env_file:
+      - .env
+    volumes:
+      - shared_data:/app/storage
+    depends_on:
+      db_postgres:
+        condition: service_healthy
+    networks:
+      - plataforma-net
+
+  audit-trace:
+    build: 
+      context: ./Backend/audit-trace
+      dockerfile: Dockerfile
+    container_name: audit-trace
+    ports:
+      - "8002:8002"
+    env_file:
+      - .env
+    depends_on:
+      db_postgres:
+        condition: service_healthy
+    networks:
+      - plataforma-net
+
+  transformation:
+    build: 
+      context: ./Backend/transformation
+      dockerfile: Dockerfile
+    container_name: transformation
+    ports:
+      - "8004:8004"
+    env_file:
+      - .env
+    volumes:
+      - shared_data:/app/storage
+    depends_on:
+      db_postgres:
+        condition: service_healthy
+    networks:
+      - plataforma-net
+
+  analytics:
+    build: 
+      context: ./Backend/analytics
+      dockerfile: Dockerfile
+    container_name: analytics
+    ports:
+      - "8005:8005"
+    env_file:
+      - .env
+    volumes:
+      - shared_data:/app/storage
+    depends_on:
+      db_postgres:
+        condition: service_healthy
+    networks:
+      - plataforma-net
+
+  bff-gateway:
+    build: 
+      context: ./Backend/gateway
+      dockerfile: Dockerfile
+    container_name: bff-gateway
+    ports:
+      - "8000:8000"
+      - "8080:8000"
+    depends_on:
+      - ms_configuration
+      - ms_ingestion
+      - ms_audit-trace
+      - ms_transformation
+      - ms_analytics
+    networks:
+      - plataforma-net
+
+  frontend-web:
+    build:
+      context: ./Frontend/Territorial-Web
+      dockerfile: Dockerfile
+    container_name: frontend-web
+    ports:
+      - "5173:5173"
+    depends_on:
+      - api-gateway
+    networks:
+      - plataforma-net
+
+networks:
+  plataforma-net:
+    driver: bridge
+
+volumes:
+  pgdata:
+  shared_data:

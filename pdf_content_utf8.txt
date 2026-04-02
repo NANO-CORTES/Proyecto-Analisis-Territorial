@@ -1,0 +1,73 @@
+Mejora de Criterios de Aceptación – 
+Equipo 83674  
+Este documento complementa el trabajo del equipo, identificando faltantes específicos en 
+los criterios de aceptación y explicando por qué son importantes en un entorno empresarial 
+real (sistemas distribuidos).  
+HU-01 Carga de datasets  
+Faltante: Idempotencia (detección de archivos duplicados)  
+Justificación: Evita duplicación de datos y problemas en analítica.  
+ 
+Faltante: Manejo de errores en persistencia  
+Justificación: Garantiza consistencia de datos ante fallos.  
+ 
+Faltante: Validación de seguridad de archivos  
+Justificación: Previene riesgos de seguridad en archivos cargados.  
+HU-02 Validación  
+Faltante: Versionamiento de reglas de validación  
+Justificación: Permite trazabilidad y auditoría de resultados.  
+ 
+Faltante: Persistencia de resultados de validación  
+Justificación: Permite consultas posteriores y control del flujo.  
+HU-03 Persistencia  
+Faltante: Consistencia transaccional  
+Justificación: Evita datos incompletos o corruptos.  
+ 
+Faltante: Auditoría básica  
+Justificación: Permite rastrear origen y cambios en datos.  
+HU-04 Consulta de zonas  
+Faltante: Validación de estado de datos  
+Justificación: Evita mostrar información no procesada o inconsistente.  
+ 
+Faltante: Soporte para grandes volúmenes  
+Justificación: Garantiza escalabilidad del sistema.  
+
+HU-05 UI  
+Faltante: Manejo global de errores  
+Justificación: Mejora experiencia del usuario y robustez.  
+HU-06 Infraestructura  
+Faltante: Observabilidad (logs con trace_id)  
+Justificación: Permite monitoreo y diagnóstico en producción.  
+HU-07 Transformación  
+Faltante: Reproducibilidad  
+Justificación: Permite replicar resultados analíticos.  
+ 
+Faltante: Versionamiento de transformación  
+Justificación: Control de cambios en procesos analíticos.  
+HU-08 Observabilidad  
+Faltante: Validación de dependencias  
+Justificación: Detecta fallos en servicios externos.  
+HU-09 Auditoría  
+Faltante: Reintento ante fallos  
+Justificación: Evita pérdida de eventos críticos.  
+HU-10 Autenticación  
+Faltante: Rate limiting  
+Justificación: Previene ataques de seguridad.  
+HU-11 Roles  
+Faltante: Validación en múltiples capas  
+Justificación: Refuerza seguridad del sistema.  
+HU-12 Gestión de usuarios  
+Faltante: Expiración de credenciales temporales  
+Justificación: Mejora seguridad de acceso.  
+
+Faltantes Transversales  
+Criterios End -to-End  
+Justificación: Garantiza funcionamiento completo del sistema.  
+ 
+Manejo de errores entre microservicios  
+Justificación: Asegura resiliencia.  
+ 
+Versionamiento global  
+Justificación: Permite trazabilidad completa.  
+ 
+SLA del sistema  
+Justificación: Define expectativas de rendimiento.  
