@@ -1,9 +1,0 @@
-[submodule "Frontend"]
-	path = Frontend
-	url = https://github.com/NANO-CORTES/Frontend.git
-[submodule "Backend"]
-	path = Backend
-	url = https://github.com/NANO-CORTES/Backend.git
-[submodule "Machine-Learning"]
-	path = Machine-Learning
-	url = https://github.com/NANO-CORTES/Machine-Learning.git
