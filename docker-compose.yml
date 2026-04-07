@@ -31,7 +31,7 @@ services:
     env_file:
       - .env
     depends_on:
-      db_postgres:
+      Analisis-Territorial-DB:
         condition: service_healthy
     networks:
       - plataforma-net
@@ -48,7 +48,7 @@ services:
     volumes:
       - shared_data:/app/storage
     depends_on:
-      db_postgres:
+      Analisis-Territorial-DB:
         condition: service_healthy
     networks:
       - plataforma-net
@@ -63,7 +63,7 @@ services:
     env_file:
       - .env
     depends_on:
-      db_postgres:
+      Analisis-Territorial-DB:
         condition: service_healthy
     networks:
       - plataforma-net
@@ -80,7 +80,7 @@ services:
     volumes:
       - shared_data:/app/storage
     depends_on:
-      db_postgres:
+      Analisis-Territorial-DB:
         condition: service_healthy
     networks:
       - plataforma-net
@@ -97,7 +97,7 @@ services:
     volumes:
       - shared_data:/app/storage
     depends_on:
-      db_postgres:
+      Analisis-Territorial-DB:
         condition: service_healthy
     networks:
       - plataforma-net
@@ -111,6 +111,8 @@ services:
       - "8006:8006"
     env_file:
       - .env
+    volumes:
+      - ./Backend/ms-auth:/app
     depends_on:
       Analisis-Territorial-DB:
         condition: service_healthy
@@ -132,13 +134,17 @@ services:
 
   frontend-web:
     build:
-      context: ./Frontend/Territorial-Web
+      context: ./Frontend/Frontend-Web
       dockerfile: Dockerfile
     container_name: frontend-web
     ports:
       - "5173:5173"
+    volumes:
+      - ./Frontend/Frontend-Web:/app
+      - /app/node_modules
+    command: sh -c "rm -rf node_modules/.vite && npm install && node ./node_modules/vite/bin/vite.js --host"
     depends_on:
-      - api-gateway
+      - bff-gateway
     networks:
       - plataforma-net
 
