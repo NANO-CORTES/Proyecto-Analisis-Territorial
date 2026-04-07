@@ -1,9 +1,9 @@
 version: '3.8'
 
 services:
-  Analisis-Territorial-DB:
+  db-postgres:
     image: postgres:15-alpine
-    container_name: Analisis-Territorial-DB
+    container_name: db-postgres
     restart: always
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
@@ -21,26 +21,26 @@ services:
     networks:
       - plataforma-net
 
-  configuration:
+  ms-configuration:
     build:
       context: ./Backend/configuration
       dockerfile: Dockerfile
-    container_name: configuration
+    container_name: ms-configuration
     ports:
       - "8003:8003"
     env_file:
       - .env
     depends_on:
-      Analisis-Territorial-DB:
+      db-postgres:
         condition: service_healthy
     networks:
       - plataforma-net
 
-  ingestion:
+  ms-ingestion:
     build:
       context: ./Backend/ingestion
       dockerfile: Dockerfile
-    container_name: ingestion
+    container_name: ms-ingestion
     ports:
       - "8001:8001"
     env_file:
@@ -48,31 +48,31 @@ services:
     volumes:
       - shared_data:/app/storage
     depends_on:
-      Analisis-Territorial-DB:
+      db-postgres:
         condition: service_healthy
     networks:
       - plataforma-net
 
-  audit-trace:
+  ms-audit-trace:
     build:
       context: ./Backend/audit-trace
       dockerfile: Dockerfile
-    container_name: audit-trace
+    container_name: ms-audit-trace
     ports:
       - "8002:8002"
     env_file:
       - .env
     depends_on:
-      Analisis-Territorial-DB:
+      db-postgres:
         condition: service_healthy
     networks:
       - plataforma-net
 
-  transformation:
+  ms-transformation:
     build:
       context: ./Backend/transformation
       dockerfile: Dockerfile
-    container_name: transformation
+    container_name: ms-transformation
     ports:
       - "8004:8004"
     env_file:
@@ -80,16 +80,16 @@ services:
     volumes:
       - shared_data:/app/storage
     depends_on:
-      Analisis-Territorial-DB:
+      db-postgres:
         condition: service_healthy
     networks:
       - plataforma-net
 
-  analytics:
+  ms-analytics:
     build:
       context: ./Backend/analytics
       dockerfile: Dockerfile
-    container_name: analytics
+    container_name: ms-analytics
     ports:
       - "8005:8005"
     env_file:
@@ -97,24 +97,7 @@ services:
     volumes:
       - shared_data:/app/storage
     depends_on:
-      Analisis-Territorial-DB:
-        condition: service_healthy
-    networks:
-      - plataforma-net
-
-  ms-auth:
-    build:
-      context: ./Backend/ms-auth
-      dockerfile: Dockerfile
-    container_name: ms-auth
-    ports:
-      - "8006:8006"
-    env_file:
-      - .env
-    volumes:
-      - ./Backend/ms-auth:/app
-    depends_on:
-      Analisis-Territorial-DB:
+      db-postgres:
         condition: service_healthy
     networks:
       - plataforma-net
@@ -128,7 +111,11 @@ services:
       - "8000:8000"
       - "8080:8000"
     depends_on:
-      - ms-auth
+      - ms-configuration
+      - ms-ingestion
+      - ms-audit-trace
+      - ms-transformation
+      - ms-analytics
     networks:
       - plataforma-net
 
