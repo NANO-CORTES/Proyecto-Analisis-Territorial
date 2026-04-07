@@ -14,7 +14,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -22,7 +22,7 @@ services:
       - plataforma-net
 
   configuration:
-    build: 
+    build:
       context: ./Backend/configuration
       dockerfile: Dockerfile
     container_name: configuration
@@ -31,13 +31,13 @@ services:
     env_file:
       - .env
     depends_on:
-      db_postgres:
+      Analisis-Territorial-DB:
         condition: service_healthy
     networks:
       - plataforma-net
 
   ingestion:
-    build: 
+    build:
       context: ./Backend/ingestion
       dockerfile: Dockerfile
     container_name: ingestion
@@ -48,13 +48,13 @@ services:
     volumes:
       - shared_data:/app/storage
     depends_on:
-      db_postgres:
+      Analisis-Territorial-DB:
         condition: service_healthy
     networks:
       - plataforma-net
 
   audit-trace:
-    build: 
+    build:
       context: ./Backend/audit-trace
       dockerfile: Dockerfile
     container_name: audit-trace
@@ -63,13 +63,13 @@ services:
     env_file:
       - .env
     depends_on:
-      db_postgres:
+      Analisis-Territorial-DB:
         condition: service_healthy
     networks:
       - plataforma-net
 
   transformation:
-    build: 
+    build:
       context: ./Backend/transformation
       dockerfile: Dockerfile
     container_name: transformation
@@ -80,13 +80,13 @@ services:
     volumes:
       - shared_data:/app/storage
     depends_on:
-      db_postgres:
+      Analisis-Territorial-DB:
         condition: service_healthy
     networks:
       - plataforma-net
 
   analytics:
-    build: 
+    build:
       context: ./Backend/analytics
       dockerfile: Dockerfile
     container_name: analytics
@@ -97,13 +97,30 @@ services:
     volumes:
       - shared_data:/app/storage
     depends_on:
-      db_postgres:
+      Analisis-Territorial-DB:
+        condition: service_healthy
+    networks:
+      - plataforma-net
+
+  ms-auth:
+    build:
+      context: ./Backend/ms-auth
+      dockerfile: Dockerfile
+    container_name: ms-auth
+    ports:
+      - "8006:8006"
+    env_file:
+      - .env
+    volumes:
+      - ./Backend/ms-auth:/app
+    depends_on:
+      Analisis-Territorial-DB:
         condition: service_healthy
     networks:
       - plataforma-net
 
   bff-gateway:
-    build: 
+    build:
       context: ./Backend/gateway
       dockerfile: Dockerfile
     container_name: bff-gateway
@@ -111,23 +128,23 @@ services:
       - "8000:8000"
       - "8080:8000"
     depends_on:
-      - ms_configuration
-      - ms_ingestion
-      - ms_audit-trace
-      - ms_transformation
-      - ms_analytics
+      - ms-auth
     networks:
       - plataforma-net
 
   frontend-web:
     build:
-      context: ./Frontend/Territorial-Web
+      context: ./Frontend/Frontend-Web
       dockerfile: Dockerfile
     container_name: frontend-web
     ports:
       - "5173:5173"
+    volumes:
+      - ./Frontend/Frontend-Web:/app
+      - /app/node_modules
+    command: sh -c "rm -rf node_modules/.vite && npm install && node ./node_modules/vite/bin/vite.js --host"
     depends_on:
-      - api-gateway
+      - bff-gateway
     networks:
       - plataforma-net
 
