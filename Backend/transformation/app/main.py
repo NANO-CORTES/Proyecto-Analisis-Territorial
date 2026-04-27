@@ -150,6 +150,21 @@ def transform_advanced(
 
 
 @app.get(
+    "/api/v1/transform/results",
+    summary="Listar todas las ejecuciones de transformación",
+    tags=["transformation"],
+)
+def list_runs(
+    db: Session = Depends(get_db),
+):
+    """
+    Retorna la lista de todas las transformaciones realizadas, ordenadas por fecha.
+    """
+    from app.services.transformation_service import list_transformation_runs
+    return list_transformation_runs(db)
+
+
+@app.get(
     "/api/v1/transform/results/{run_id}",
     summary="Obtener resultados de una transformación",
     tags=["transformation"],

@@ -1,4 +1,5 @@
 from fastapi import Request, HTTPException, status
+from fastapi.responses import JSONResponse
 from jose import jwt, JWTError
 from app.core.config import settings
 import functools
@@ -26,7 +27,11 @@ async def auth_middleware(request: Request, call_next):
     ]
     
     # Check if the path is a health check (either direct or proxied)
-    is_health_path = request.url.path.endswith("/health") or "/health/" in request.url.path
+    is_health_path = (
+        request.url.path.endswith("/health") or 
+        "/health/" in request.url.path or 
+        request.url.path.endswith("/health-check")
+    )
     
     # Check if path is in public paths list
     is_public_path = any(request.url.path.startswith(path) for path in public_paths)
@@ -40,9 +45,9 @@ async def auth_middleware(request: Request, call_next):
     
     payload = get_auth_payload(request)
     if not payload:
-        raise HTTPException(
+        return JSONResponse(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="No autenticado",
+            content={"detail": "No autenticado"},
             headers={"WWW-Authenticate": "Bearer"},
         )
     
