@@ -56,15 +56,24 @@ const ProfilePage: React.FC = () => {
       
       // Fetch datasets
       const dsRes = await fetch('http://127.0.0.1:8000/api/v1/ingestion/datasets/', { headers });
-      if (dsRes.ok) setDatasets(await dsRes.json());
+      if (dsRes.ok) {
+        const data = await dsRes.json();
+        setDatasets(Array.isArray(data) ? data : (data.data || data.value || []));
+      }
 
       // Fetch audit logs
-      const auditRes = await fetch('http://127.0.0.1:8000/api/v1/audit/', { headers });
-      if (auditRes.ok) setAuditLogs(await auditRes.json());
+      const auditRes = await fetch('http://127.0.0.1:8000/api/v1/audit/api/v1/audit/trace', { headers });
+      if (auditRes.ok) {
+        const data = await auditRes.json();
+        setAuditLogs(Array.isArray(data) ? data : (data.data || data.value || []));
+      }
 
       // Fetch transformation results
-      const transRes = await fetch('http://127.0.0.1:8000/api/v1/transform/results', { headers });
-      if (transRes.ok) setTransformResults(await transRes.json());
+      const transRes = await fetch('http://127.0.0.1:8000/api/v1/transformation/api/v1/transform/results', { headers });
+      if (transRes.ok) {
+        const data = await transRes.json();
+        setTransformResults(Array.isArray(data) ? data : (data.data || data.value || []));
+      }
 
     } catch (err) {
       console.error("Error fetching profile data:", err);

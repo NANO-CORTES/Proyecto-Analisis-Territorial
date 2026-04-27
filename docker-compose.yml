@@ -111,7 +111,7 @@ services:
 
   ms-auth:
     build:
-      context: ./Backend/ms-auth
+      context: ./Backend/auth
       dockerfile: Dockerfile
     container_name: ms-auth
     ports:

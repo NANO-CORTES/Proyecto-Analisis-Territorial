@@ -452,3 +452,10 @@ def get_transformation_results(db: Session, run_id: str) -> List[TransformedReco
     Retorna todos los registros transformados asociados a una ejecución.
     """
     return db.query(TransformedRecord).filter(TransformedRecord.run_id == run_id).all()
+
+
+def list_transformation_runs(db: Session) -> List[TransformationRun]:
+    """
+    Retorna todas las ejecuciones de transformación ordenadas por fecha descendente.
+    """
+    return db.query(TransformationRun).order_by(TransformationRun.created_at.desc()).all()

@@ -4,6 +4,8 @@ import { useAuth } from '../components/AuthProvider';
 import FileUploadFAB from '../components/FileUploadFAB';
 import TerritoriosModal from '../components/TerritoriosModal';
 import ZoneList from '../components/ZoneList';
+import ScoringConfig from '../components/ScoringConfig';
+import RankingList from '../components/RankingList';
 import '../styles/Dashboard.css';
 
 const COLOMBIA_DEPARTMENTS = [
@@ -21,6 +23,7 @@ const DashboardPage: React.FC = () => {
   const [territoriosOpen, setTerritoriosOpen] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState('');
   const [deptOpen, setDeptOpen] = useState(false);
+  const [currentExecutionId, setCurrentExecutionId] = useState<string | null>(null);
   const deptRef = useRef<HTMLDivElement>(null);
 
   // Cerrar dropdown al hacer clic fuera
@@ -156,12 +159,23 @@ const DashboardPage: React.FC = () => {
             </div>
             <div className="stat-info">
               <span className="stat-label">Reportes</span>
-              <span className="stat-value">--</span>
+              <span className="stat-value">PDF</span>
             </div>
           </div>
         </div>
 
         <ZoneList department={selectedDepartment} />
+
+        <div className="analytics-grid" style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', 
+          gap: '1.5rem', 
+          marginTop: '2rem',
+          width: '100%'
+        }}>
+          <ScoringConfig onScoringExecuted={(id) => setCurrentExecutionId(id)} />
+          <RankingList executionId={currentExecutionId} />
+        </div>
       </main>
 
       <FileUploadFAB />
