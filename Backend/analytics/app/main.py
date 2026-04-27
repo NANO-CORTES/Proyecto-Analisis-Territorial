@@ -1,18 +1,12 @@
 from fastapi import FastAPI
-<<<<<<< HEAD
 
-app = FastAPI(title="Microservice API")
-
-@app.get("/")
-def root():
-    return {"message": "Service is running"}
-=======
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.core.database import init_db
 from app.api.endpoints.ranking import router as ranking_router
 from app.api.endpoints.health import router as health_router
+from app.api.endpoints.analytics import router as analytics_router
 
 app = FastAPI(
     title=settings.service_name,
@@ -30,6 +24,7 @@ app.add_middleware(
 
 app.include_router(ranking_router)
 app.include_router(health_router)
+app.include_router(analytics_router)
 
 
 @app.on_event("startup")
@@ -44,4 +39,4 @@ def root():
         "version": settings.service_version,
         "docs": "/docs",
     }
->>>>>>> feature/mis-cambios
+

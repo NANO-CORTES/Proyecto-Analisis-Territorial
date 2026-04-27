@@ -39,3 +39,20 @@ class ScoreExecution(Base):
     configuration_id = Column(String, nullable=True)
     total_zones = Column(Integer, default=0)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+class IndicatorResult(Base):
+    """
+    Resultado de indicadores calculados por zona.
+    SRP: solo almacena datos de indicadores, no tiene lógica.
+    """
+    __tablename__ = "indicator_results"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    transformation_run_id = Column(String, nullable=False, index=True)
+    zone_code = Column(String(50), nullable=False)
+    zone_name = Column(String(255), nullable=False)
+    population_indicator = Column(Float, default=0.0)
+    income_indicator = Column(Float, default=0.0)
+    education_indicator = Column(Float, default=0.0)
+    competition_indicator = Column(Float, default=0.0)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
