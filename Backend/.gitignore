@@ -1,0 +1,46 @@
+# Documentos de uso para referencia interna
+*.docx
+*.csv
+*.json
+doc_text.txt
+
+# Carpetas con archivos residuales de ejecución
+.pytest_cache/
+**/__pycache__/
+*.pyc
+
+# Entornos virtuales
+venv/
+env
+.venv/
+
+# Variables de entorno
+.env
+*.env.local
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# Archivos temporales
+*.tmp
+
+#Dependencias Frontend
+node_modules/
+npm-debug.log*
+
+# Logs
+*.log
+yarn-debug.log
+yarn-error.log
+.sqlite3
+
+# Python
+.coverage
+htmlcov/
+.tox/
+.cache
