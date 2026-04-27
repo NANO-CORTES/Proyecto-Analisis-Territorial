@@ -105,7 +105,7 @@ services:
 
   ms-auth:
     build:
-      context: ./Backend/auth
+      context: ./Backend/ms-auth
       dockerfile: Dockerfile
     container_name: ms-auth
     ports:
@@ -145,10 +145,6 @@ services:
     container_name: frontend-web
     ports:
       - "5173:5173"
-    volumes:
-      - ./Frontend/Frontend-Web:/app
-      - /app/node_modules
-    command: sh -c "rm -rf node_modules/.vite && npm install && node ./node_modules/vite/bin/vite.js --host"
     depends_on:
       - bff-gateway
     networks:
