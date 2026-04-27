@@ -1,15 +1,14 @@
 from typing import Optional
 from app.interfaces.ranking_repository import IRankingRepository
 from app.schemas.schema import RankingResponse, ZoneRankingItem, ScoreLevel
-# Al final de ejecutar el scoring
-# Al final de ejecutar el scoring
-from app.services.audit_client import send_trace_event
-import asyncio
 
 PAGE_SIZE = 20
 
 
 class RankingService:
+    #- SRP: solo maneja lógica de ranking, no acceso a BD ni HTTP.
+    # - DIP: depende de IRankingRepository (abstracción), no de la implementación.
+    #- OCP: para cambiar la fuente de datos, se inyecta otro repositorio.
 
     def __init__(self, repository: IRankingRepository):
         # Inyección de dependencia — DIP
@@ -98,5 +97,3 @@ class RankingService:
             score_level=ScoreLevel(zone["score_level"]),
             execution_id=zone["execution_id"],
         )
-    
-    

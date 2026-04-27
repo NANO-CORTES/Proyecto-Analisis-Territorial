@@ -17,7 +17,6 @@ class ZoneScore(Base):
     SRP: solo almacena datos de scoring, no tiene lógica.
     """
     __tablename__ = "zone_scores"
-    __table_args__ = {"schema": "analytics"}
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     execution_id = Column(String, nullable=False, index=True)
@@ -28,32 +27,12 @@ class ZoneScore(Base):
     rank_position = Column(Integer, nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
-class IndicatorResult(Base):
-    """
-    HU-13: Persiste los indicadores calculados por zona.
-    """
-    __tablename__ = "indicator_results"
-    __table_args__ = {"schema": "analytics"}
-
-    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    transformation_run_id = Column(String, nullable=False, index=True)
-    zone_code = Column(String(50), nullable=False)
-    zone_name = Column(String(255), nullable=False)
-    
-    population_indicator = Column(Float, default=0.0)
-    income_indicator = Column(Float, default=0.0)
-    education_indicator = Column(Float, default=0.0)
-    competition_indicator = Column(Float, default=0.0)
-    
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-
 class ScoreExecution(Base):
     """
     Representa una ejecución de scoring.
     SRP: solo almacena metadata de la ejecución.
     """
     __tablename__ = "score_executions"
-    __table_args__ = {"schema": "analytics"}
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     transformation_run_id = Column(String, nullable=False)
