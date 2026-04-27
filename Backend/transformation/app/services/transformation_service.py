@@ -445,3 +445,10 @@ def _load_dataset_from_storage(
 
     # Cargar el archivo más reciente
     return load_dataset_file(files[0])
+
+
+def get_transformation_results(db: Session, run_id: str) -> List[TransformedRecord]:
+    """
+    Retorna todos los registros transformados asociados a una ejecución.
+    """
+    return db.query(TransformedRecord).filter(TransformedRecord.run_id == run_id).all()

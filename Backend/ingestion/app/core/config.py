@@ -4,7 +4,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Ingestion Service"
     POSTGRES_USER: str = "postgres"
     POSTGRES_PASSWORD: str = "admin"
-    POSTGRES_HOST: str = "db_postgres"
+    POSTGRES_HOST: str = "db-postgres"
     POSTGRES_PORT: str = "5432"
     POSTGRES_DB: str = "territorial_db"
     JWT_SECRET: str = "supersecretkey12345"

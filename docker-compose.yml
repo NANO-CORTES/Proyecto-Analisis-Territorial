@@ -80,6 +80,7 @@ services:
       - .env
     volumes:
       - shared_data:/app/storage
+      - ./Backend/transformation:/app
     depends_on:
       db-postgres:
         condition: service_healthy
@@ -97,9 +98,14 @@ services:
       - .env
     volumes:
       - shared_data:/app/storage
+      - ./Backend/analytics:/app
     depends_on:
       db-postgres:
         condition: service_healthy
+      ms-transformation:
+        condition: service_started
+      ms-configuration:
+        condition: service_started
     networks:
       - plataforma-net
 

@@ -1,11 +1,3 @@
-<<<<<<< HEAD
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-
-app = FastAPI(
-    title="Transformation Service",
-    description="Microservicio de transformación de datos",
-=======
 """
 ms-transformation — Microservicio de Transformación Avanzada
 =============================================================
@@ -49,7 +41,6 @@ logger.addHandler(ch)
 app = FastAPI(
     title="Transformation Service",
     description="Microservicio de transformación y normalización avanzada de datos territoriales (HU-20)",
->>>>>>> developer/Carlos
     version="1.0.0",
 )
 
@@ -61,15 +52,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-<<<<<<< HEAD
-@app.get("/health")
-def health():
-    return {"status": "healthy", "service": "ms-transformation"}
-
-@app.get("/")
-def root():
-    return {"message": "Transformation Service is running"}
-=======
 app.add_exception_handler(Exception, global_exception_handler)
 
 
@@ -165,4 +147,22 @@ def transform_advanced(
         rules_applied=run.rules_applied,
         created_at=run.created_at,
     )
->>>>>>> developer/Carlos
+
+
+@app.get(
+    "/api/v1/transform/results/{run_id}",
+    summary="Obtener resultados de una transformación",
+    tags=["transformation"],
+)
+def get_results(
+    run_id: str,
+    db: Session = Depends(get_db),
+):
+    """
+    Retorna los registros transformados celda por celda para un run_id dado.
+    """
+    from app.services.transformation_service import get_transformation_results
+    results = get_transformation_results(db, run_id)
+    if not results:
+        raise DomainException(f"No se encontraron resultados para el run_id {run_id}", status_code=404)
+    return results

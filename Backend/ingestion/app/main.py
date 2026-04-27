@@ -8,16 +8,26 @@ from app.core.exceptions import global_exception_handler
 from sqlalchemy import text
 import time
 
-with engine.connect() as con:
-    con.execute(text("CREATE SCHEMA IF NOT EXISTS ingestion"))
-    # Add department column if it doesn't exist
+# ── Database Initialization ──
+def init_db_schema():
+    """Ensure the ingestion schema exists before any table creation."""
     try:
-        con.execute(text("ALTER TABLE ingestion.dataset_zones ADD COLUMN IF NOT EXISTS department VARCHAR"))
-    except Exception:
-        # Table might not exist yet, create_all will handle it
-        pass
-    con.commit()
+        with engine.connect() as con:
+            con.execute(text("CREATE SCHEMA IF NOT EXISTS ingestion"))
+            con.commit()
+            print("Schema 'ingestion' verified/created.")
+            
+            # Add department column if it doesn't exist
+            try:
+                con.execute(text("ALTER TABLE ingestion.dataset_zones ADD COLUMN IF NOT EXISTS department VARCHAR"))
+                con.commit()
+            except Exception:
+                # Table might not exist yet, create_all will handle it
+                pass
+    except Exception as e:
+        print(f"Error initializing schema: {e}")
 
+init_db_schema()
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(

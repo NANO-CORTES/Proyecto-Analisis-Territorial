@@ -6,23 +6,6 @@ from app.schemas.schema import RankingResponse, ZoneRankingItem, ScoreLevel
 from app.services.audit_client import send_trace_event
 import asyncio
 
-# Enviar evento a audit-trace (sin await, ejecutarlo en segundo plano)
-asyncio.create_task(send_trace_event({
-    "dataset_load_id": execution_id,
-    "score_execution_id": execution_id,
-    "event_type": "SCORING_EXECUTED",
-    "parameters": {
-        "execution_id": execution_id,
-        "config_id": config_id,
-        "formula_version": "1.0"
-    },
-    "result_summary": {
-        "total_zones": total_zones,
-        "avg_score": avg_score
-    },
-    "user_id": user_id
-}))
-
 PAGE_SIZE = 20
 
 

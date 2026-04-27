@@ -15,6 +15,11 @@ class Settings(BaseSettings):
     postgres_port: str = os.getenv("POSTGRES_PORT", "5432")
     postgres_db: str = os.getenv("POSTGRES_DB", "territorial_db")
 
+    # Microservices URLs
+    MS_TRANSFORMATION_URL: str = os.getenv("MS_TRANSFORMATION_URL", "http://ms-transformation:8004")
+    MS_CONFIGURATION_URL: str = os.getenv("MS_CONFIGURATION_URL", "http://ms-configuration:8003")
+    MS_AUDIT_TRACE_URL: str = os.getenv("MS_AUDIT_TRACE_URL", "http://ms-audit-trace:8002")
+
     database_url: Optional[str] = None
 
     def model_post_init(self, __context) -> None:
