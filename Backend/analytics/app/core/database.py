@@ -5,6 +5,8 @@ from app.core.config import settings
 engine = create_engine(settings.database_url, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+from app.models.ranking import Base #hu-15
+
 def get_db():
     db = SessionLocal()
     try:
