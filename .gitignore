@@ -106,3 +106,6 @@ dataset_territorial_completo.csv
 dataset_territorial_completo.json
 seed_profiles.py
 shared-storage/
+Machine-Learning/Machine-Learning/processed_data.csv
+Machine-Learning/Machine-Learning/results_with_ml.csv
+Machine-Learning/Machine-Learning/models/

@@ -91,6 +91,13 @@ async def proxy_admin(request: Request, path: str):
         url += f"?{request.query_params}"
     return await forward_request(request, url)
 
+@router.api_route("/ml/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+async def proxy_ml(request: Request, path: str):
+    url = f"{settings.MS_ML_URL}/{path}"
+    if request.query_params:
+        url += f"?{request.query_params}"
+    return await forward_request(request, url)
+
 @router.get("/bff/zone-summary/{zone_code}", tags=["bff"])
 async def get_zone_summary(zone_code: str, request: Request):
     """

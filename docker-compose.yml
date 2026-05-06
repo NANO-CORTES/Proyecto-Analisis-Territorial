@@ -124,6 +124,24 @@ services:
     networks:
       - plataforma-net
 
+  machine-learning:
+    build:
+      context: ./Machine-Learning/Machine-Learning
+      dockerfile: Dockerfile
+    container_name: machine-learning
+    ports:
+      - "8007:8007"
+    env_file:
+      - .env
+    volumes:
+      - shared_data:/app/storage
+      - ./Machine-Learning/Machine-Learning:/app
+    depends_on:
+      db-postgres:
+        condition: service_healthy
+    networks:
+      - plataforma-net
+
   bff-gateway:
     build:
       context: ./Backend/gateway
@@ -139,6 +157,7 @@ services:
       - ms-transformation
       - ms-analytics
       - ms-auth
+      - machine-learning
     volumes:
       - ./Backend/gateway:/app
     networks:
