@@ -122,6 +122,9 @@ const MLExperimentsPage: React.FC = () => {
           <button className="nav-link" onClick={() => navigate('/admin/users')}>
             Gestión de Usuarios
           </button>
+          <button className="nav-link" onClick={() => navigate('/admin/audit')}>
+            Auditoría
+          </button>
           <button className="nav-link active" onClick={() => navigate('/admin/ml-experiments')}>
             Experimentos ML
           </button>
