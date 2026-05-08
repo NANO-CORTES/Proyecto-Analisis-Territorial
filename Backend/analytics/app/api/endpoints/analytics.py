@@ -3,11 +3,13 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.services.indicators_service import IndicatorsService
 from app.services.scoring_service import ScoringService
+from app.services.hybrid_scoring_service import HybridScoringService
 from typing import Optional
-
+from app.schemas.scoring import ScoringRequest
 router = APIRouter()
 indicators_service = IndicatorsService()
-scoring_service = ScoringService()
+hybrid_service = HybridScoringService()
+
 
 @router.post("/api/v1/indicators/calculate", tags=["analytics"])
 async def calculate_indicators(transformation_run_id: str, db: Session = Depends(get_db)):
@@ -17,9 +19,13 @@ async def calculate_indicators(transformation_run_id: str, db: Session = Depends
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/api/v1/scoring/execute", tags=["analytics"])
-async def execute_scoring(transformation_run_id: str, db: Session = Depends(get_db)):
+async def execute_scoring(request: ScoringRequest, db: Session = Depends(get_db)):
     try:
-        return await scoring_service.execute_scoring(transformation_run_id, db)
+        
+        service = ScoringService(db) 
+        
+        return await service.execute(request)
+        
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
