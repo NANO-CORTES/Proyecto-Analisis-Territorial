@@ -117,15 +117,6 @@ const DashboardPage: React.FC = () => {
                   <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                 </svg>
                 Gestión de Usuarios
-              </button>
-              <button className="nav-link" onClick={() => navigate('/admin/ml-experiments')}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                  <line x1="3" y1="9" x2="21" y2="9" />
-                  <line x1="9" y1="21" x2="9" y2="9" />
-                </svg>
-                Experimentos ML
-              </button>
             </>
           )}
         </nav>
@@ -187,27 +178,7 @@ const DashboardPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Card: Análisis */}
-          <button
-            id="btn-start-analysis"
-            className="action-card action-card-green action-card-btn"
-            onClick={() => navigate('/analysis')}
-          >
-            <div className="action-card-icon">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-              </svg>
-            </div>
-            <div className="action-card-body">
-              <span className="action-card-title">Análisis</span>
-              <span className="action-card-subtitle">
-                {selectedMunicipios.length > 0
-                  ? `${selectedMunicipios.length} municipio(s) seleccionado(s)`
-                  : 'Iniciar análisis territorial'}
-              </span>
-            </div>
-            <div className="action-card-arrow">→</div>
-          </button>
+            </button>
 
           {/* Card: Reportes */}
           <div className="action-card action-card-purple">
@@ -293,19 +264,6 @@ const DashboardPage: React.FC = () => {
             )}
           </div>
 
-          {selectedMunicipios.length > 0 && (
-            <div className="municipios-footer">
-              <span>{selectedMunicipios.length} municipio(s) en {selectedDept} seleccionado(s) para análisis</span>
-              <button
-                className="btn-run-analysis"
-                onClick={() => navigate('/analysis')}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-                </svg>
-                Analizar selección
-              </button>
-            </div>
           )}
         </div>
       </main>

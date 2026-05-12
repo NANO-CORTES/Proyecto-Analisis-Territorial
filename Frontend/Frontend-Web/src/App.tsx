@@ -7,8 +7,6 @@ import DashboardPage from './pages/DashboardPage';
 import ProfilePage from './pages/ProfilePage';
 import RegisterPage from './pages/RegisterPage';
 import UserManagementPage from './pages/UserManagementPage';
-import MLExperimentsPage from './pages/MLExperimentsPage';
-import AnalysisPage from './pages/AnalysisPage';
 import './styles/App.css';
 
 function App() {
@@ -19,21 +17,12 @@ function App() {
           <Route path="/" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-          <Route path="/analysis" element={<ProtectedRoute><AnalysisPage /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
           <Route
             path="/admin/users"
             element={
               <ProtectedRoute requiredRole="ADMIN">
                 <UserManagementPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/ml-experiments"
-            element={
-              <ProtectedRoute requiredRole="ADMIN">
-                <MLExperimentsPage />
               </ProtectedRoute>
             }
           />
