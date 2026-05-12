@@ -1,8 +1,6 @@
 import uuid
 from typing import Optional
-
 from fastapi import UploadFile
-
 from app.interfaces.datasetRepo import IDatasetRepository
 from app.interfaces.ingestionService import IIngestionService
 from app.models.dataset import DatasetLoad, DatasetZone
@@ -15,11 +13,11 @@ class IngestionService(IIngestionService):
         self.datasetRepo = datasetRepo
 
     async def processUpload(
-        self, 
-        userId: str, 
-        file: UploadFile, 
-        sourceName: Optional[str] = None, 
-        sourceType: Optional[str] = None
+        self,
+        userId: str,
+        file: UploadFile,
+        sourceName: Optional[str] = None,
+        sourceType: Optional[str] = None,
     ) -> DatasetLoad:
         fileHash, uniqueFileName, fileSizeBytes, valData = await validateAndProcessFile(file)
 
@@ -27,32 +25,32 @@ class IngestionService(IIngestionService):
         if existingDataset:
             raise DomainException(
                 message=(
-                    f"Ya existe un dataset con contenido idéntico "
+                    f"Ya existe un dataset con contenido identico "
                     f"(hash: {fileHash}) registrado como '{existingDataset.fileName}'."
                 ),
-                status_code=409
+                status_code=409,
             )
 
         newDataset = DatasetLoad(
-            datasetId          = uuid.uuid4().hex,
-            userId             = userId,
-            fileName           = file.filename,
-            fileHash           = fileHash,
-            fileSize           = fileSizeBytes,
-            recordCount        = valData["recordCount"],
-            validRecordCount   = valData["validRecordCount"],
-            invalidRecordCount = valData["invalidRecordCount"],
-            sourceName         = sourceName,
-            sourceType         = sourceType,
-            status             = "VALID"
+            datasetId=uuid.uuid4().hex,
+            userId=userId,
+            fileName=file.filename,
+            fileHash=fileHash,
+            fileSize=fileSizeBytes,
+            recordCount=valData["recordCount"],
+            validRecordCount=valData["validRecordCount"],
+            invalidRecordCount=valData["invalidRecordCount"],
+            sourceName=sourceName,
+            sourceType=sourceType,
+            status="VALID",
         )
-        
+
         zones = [
             DatasetZone(
                 zoneCode=z["zoneCode"],
                 zoneName=z["zoneName"],
                 department=z.get("department"),
-                datasetLoad=newDataset
+                datasetLoad=newDataset,
             )
             for z in valData["zones"]
         ]

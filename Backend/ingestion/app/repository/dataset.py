@@ -1,9 +1,7 @@
 from typing import Optional, List, Tuple
-
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, desc, func
-
 from app.core.exceptions import DomainException
 from app.interfaces.datasetRepo import IDatasetRepository
 from app.models.dataset import DatasetLoad, DatasetZone
@@ -41,14 +39,12 @@ class DatasetRepository(IDatasetRepository):
         if department:
             query = query.filter(DatasetZone.department == department)
         else:
-            # Heuristic: In Colombia, Municipalities have 5-digit codes. 
-            # Departments have 2-digit codes. Filter for 5+ digits.
             query = query.filter(func.length(DatasetZone.zoneCode) >= 5)
         if search:
             query = query.filter(
                 or_(
                     DatasetZone.zoneCode.ilike(f"%{search}%"),
-                    DatasetZone.zoneName.ilike(f"%{search}%")
+                    DatasetZone.zoneName.ilike(f"%{search}%"),
                 )
             )
 
@@ -68,5 +64,5 @@ class DatasetRepository(IDatasetRepository):
             self.db.rollback()
             raise DomainException(
                 f"Error de base de datos durante la persistencia: {str(e)}",
-                status_code=500
+                status_code=500,
             )

@@ -1,13 +1,9 @@
 from sqlalchemy.orm import Session
 from fastapi import Depends
 from app.core.database import get_db
-from app.repository.audit import AuditRepository
-from app.services.audit import AuditService
-from app.interfaces.audit_repo import IAuditRepository
-from app.interfaces.audit_service import IAuditService
+from app.interfaces.trace_repository import ITraceRepository
+from app.repositories.trace_repository import TraceRepository
 
-def get_audit_repository(db: Session = Depends(get_db)) -> IAuditRepository:
-    return AuditRepository(db)
 
-def get_audit_service(repo: IAuditRepository = Depends(get_audit_repository)) -> IAuditService:
-    return AuditService(repo)
+def getTraceRepository(db: Session = Depends(get_db)) -> ITraceRepository:
+    return TraceRepository(db)

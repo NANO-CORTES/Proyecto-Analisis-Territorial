@@ -1,11 +1,13 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Enum
 from app.core.database import Base
 import enum
 
+
 class UserRole(str, enum.Enum):
     ADMIN = "ADMIN"
     USER = "USER"
+
 
 class User(Base):
     __tablename__ = "users"
@@ -18,5 +20,5 @@ class User(Base):
     full_name = Column(String)
     role = Column(Enum(UserRole), default=UserRole.USER)
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     last_login = Column(DateTime, nullable=True)

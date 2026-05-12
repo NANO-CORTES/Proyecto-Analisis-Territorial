@@ -6,30 +6,26 @@ from app.core.config import settings
 
 security = HTTPBearer()
 
-def decode_access_token(token: str) -> Dict:
+
+def decodeAccessToken(token: str) -> Dict:
     try:
-        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
-        return payload
+        return jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
-def get_current_user(credentials: HTTPAuthorizationCredentials = Security(security)) -> Dict:
-    token = credentials.credentials
-    payload = decode_access_token(token)
-    
-    username: str = payload.get("sub")
-    role: str = payload.get("role")
-    
+
+def getCurrentUser(credentials: HTTPAuthorizationCredentials = Security(security)) -> Dict:
+    payload = decodeAccessToken(credentials.credentials)
+    username = payload.get("sub")
     if username is None:
         raise HTTPException(status_code=401, detail="Could not validate credentials")
-        
-    return {"username": username, "role": role}
+    return {"username": username, "role": payload.get("role")}
 
-def require_role(allowed_roles: list[str]):
-    def role_checker(request: Request, user: dict = Depends(get_current_user)):
-        user_role = user.get("role")
-        if not user_role or user_role not in allowed_roles:
-            raise HTTPException(status_code=403, detail="Insufficient restricted permissions")
+
+def requireRole(allowedRoles: list[str]):
+    def roleChecker(request: Request, user: dict = Depends(getCurrentUser)):
+        if user.get("role") not in allowedRoles:
+            raise HTTPException(status_code=403, detail="Insufficient permissions")
         request.state.user = user
         return user
-    return role_checker
+    return roleChecker
