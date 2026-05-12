@@ -1,6 +1,6 @@
 import httpx
 from fastapi import APIRouter, Request, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
 from app.core.config import settings
 import logging
 
@@ -66,6 +66,22 @@ async def proxyAudit(request: Request, path: str):
     return await forwardRequest(request, url)
 
 
+@router.api_route("/transformation/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+async def proxyTransformation(request: Request, path: str):
+    url = f"{settings.MS_TRANSFORMATION_URL}/{path}"
+    if request.query_params:
+        url += f"?{request.query_params}"
+    return await forwardRequest(request, url)
+
+
+@router.api_route("/analytics/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+async def proxyAnalytics(request: Request, path: str):
+    url = f"{settings.MS_ANALYTICS_URL}/{path}"
+    if request.query_params:
+        url += f"?{request.query_params}"
+    return await forwardRequest(request, url)
+
+
 @router.api_route("/auth/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 async def proxyAuth(request: Request, path: str):
     url = f"{settings.MS_AUTH_URL}/{path}"
@@ -80,3 +96,38 @@ async def proxyAdmin(request: Request, path: str):
     if request.query_params:
         url += f"?{request.query_params}"
     return await forwardRequest(request, url)
+
+
+@router.api_route("/ml/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+async def proxyMl(request: Request, path: str):
+    url = f"{settings.MS_ML_URL}/{path}"
+    if request.query_params:
+        url += f"?{request.query_params}"
+    return await forwardRequest(request, url)
+
+
+@router.get("/bff/zone-summary/{zone_code}", tags=["bff"])
+async def getZoneSummary(zone_code: str, request: Request):
+    traceId = getattr(request.state, "trace_id", "")
+    headers = {"x-trace-id": traceId}
+
+    analyticsUrl = f"{settings.MS_ANALYTICS_URL}/api/v1/zone-summary/{zone_code}"
+
+    async with httpx.AsyncClient() as c:
+        try:
+            resp = await c.get(analyticsUrl, headers=headers)
+
+            if resp.status_code != 200:
+                return JSONResponse(
+                    status_code=resp.status_code,
+                    content={"error": "Error al obtener datos de analítica", "partial": True},
+                )
+
+            data = resp.json()
+            return data
+
+        except Exception as e:
+            return JSONResponse(
+                status_code=500,
+                content={"error": f"Error de orquestación: {str(e)}", "partial": True},
+            )

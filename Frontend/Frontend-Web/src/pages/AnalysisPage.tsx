@@ -9,7 +9,6 @@ import { fetchDatasets, getDatasetById, transformAdvanced, calculateIndicators, 
 import '../styles/Dashboard.css';
 import '../styles/Analysis.css';
 
-// ─── Types ──────────────────────────────────────────────────────────────────
 
 type StepStatus = 'pending' | 'processing' | 'completed' | 'error';
 
@@ -33,7 +32,6 @@ interface Zone {
   recommendation: string;
 }
 
-// ─── Mock data ───────────────────────────────────────────────────────────────
 
 const FALLBACK_DATASETS = [
   { id: 'q1_2024', label: 'Dataset Q1-2024 (CSV)' },
@@ -77,7 +75,6 @@ function generateZones(seed: number): Zone[] {
   return zones.sort((a, b) => b.score - a.score);
 }
 
-// ─── Sub-components ──────────────────────────────────────────────────────────
 
 const StepIcon: React.FC<{ status: StepStatus; icon: string }> = ({ status, icon }) => {
   if (status === 'completed') return <span>✓</span>;
@@ -127,7 +124,7 @@ function getBadgeClass(rank: number) {
   return 'badge-gray';
 }
 
-/** Convierte 0-100 en color de celda del heatmap */
+
 function heatColor(value: number): { bg: string; color: string } {
   const r = value < 50 ? 220 : Math.round(220 - (value - 50) * 3.2);
   const g = value > 50 ? 190 : Math.round(value * 3.8);
@@ -137,7 +134,6 @@ function heatColor(value: number): { bg: string; color: string } {
   };
 }
 
-// ─── ZoneDetailCard ──────────────────────────────────────────────────────────
 
 const ZoneDetailCard: React.FC<{ zone: Zone; rank: number; onClose: () => void }> = ({ zone, rank, onClose }) => (
   <div className="glass-card detail-card" style={{ animation: 'fadeInUp 0.3s ease-out' }}>
@@ -187,7 +183,6 @@ const ZoneDetailCard: React.FC<{ zone: Zone; rank: number; onClose: () => void }
   </div>
 );
 
-// ─── HeatmapTable ────────────────────────────────────────────────────────────
 
 const HeatmapTable: React.FC<{ zones: Zone[] }> = ({ zones }) => {
   const top15 = zones.slice(0, 15);
@@ -238,7 +233,6 @@ const HeatmapTable: React.FC<{ zones: Zone[] }> = ({ zones }) => {
   );
 };
 
-// ─── Main Page ───────────────────────────────────────────────────────────────
 
 const INITIAL_STEPS: Step[] = [
   { id: 1, label: 'Cargar datos',    icon: '📂', status: 'pending' },
@@ -302,7 +296,6 @@ const AnalysisPage: React.FC = () => {
 
   const handleLoad = () => runStep(1, async () => {
     if (!dataset) throw new Error("No dataset selected");
-    // Just a UI confirmation that a dataset is selected
     await delay(500);
   });
 
@@ -310,7 +303,6 @@ const AnalysisPage: React.FC = () => {
     try {
       await getDatasetById(dataset);
     } catch(e) {
-      console.warn("Could not validate with real API, using mock delay");
       await delay(1000);
     }
   });
@@ -320,7 +312,6 @@ const AnalysisPage: React.FC = () => {
       const res = await transformAdvanced(dataset, 'minmax');
       setTransformationRunId(res.run_id);
     } catch(e) {
-      console.warn("Transform failed with real API, falling back to mock", e);
       setTransformationRunId('mock_run_id');
       await delay(1400);
     }
@@ -366,8 +357,6 @@ const AnalysisPage: React.FC = () => {
       setZones(mappedZones);
       setStep(5, 'completed');
     } catch(e) {
-      console.error("Score step failed:", e);
-      // fallback
       const data = generateZones(1337);
       setZones(data);
       setStep(5, 'completed');
