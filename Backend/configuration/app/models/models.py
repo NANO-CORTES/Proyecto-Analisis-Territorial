@@ -26,6 +26,10 @@ class ScoringConfiguration(Base):
     education_weight = Column(Float, default=0.25)
     competition_weight = Column(Float, default=0.25) # Penalización
     
+    # HU-24: Pesos para Scoring Combinado
+    analytic_weight = Column(Float, default=0.6)
+    prediction_weight = Column(Float, default=0.4)
+    
     is_active = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     

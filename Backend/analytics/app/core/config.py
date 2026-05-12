@@ -14,7 +14,8 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = ".env"
+        extra = "ignore"  # <--- ESTA LÍNEA ES LA QUE ACTIVA EL PUERTO 8005
+        case_sensitive = False # Recomendado para evitar errores de mayúsculas
 
 
 settings = Settings()
-
