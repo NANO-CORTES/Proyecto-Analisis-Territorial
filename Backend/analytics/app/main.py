@@ -7,6 +7,7 @@ from app.core.database import init_db
 from app.api.endpoints.ranking import router as ranking_router
 from app.api.endpoints.health import router as health_router
 from app.api.endpoints.analytics import router as analytics_router
+from app.api.endpoints.scoring import router as scoring_router #hu-15
 
 app = FastAPI(
     title=settings.service_name,
@@ -25,6 +26,7 @@ app.add_middleware(
 app.include_router(ranking_router)
 app.include_router(health_router)
 app.include_router(analytics_router)
+app.include_router(scoring_router)#hu-15
 
 
 @app.on_event("startup")
