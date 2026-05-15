@@ -1,10 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException
+import base64
+import concurrent.futures
+import json
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from typing import List
 import os
 import joblib
 import pandas as pd
 import numpy as np
+import httpx
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
@@ -18,9 +22,73 @@ router = APIRouter()
 
 MODELS_DIR = "/app/storage/models"
 
+AUDIT_TRACE_LOG_URL = "http://audit-trace:8001/api/v1/audit/"
+_audit_executor = concurrent.futures.ThreadPoolExecutor(max_workers=5)
+
+
+def _extract_user_id_from_jwt(request: Request) -> str:
+    auth_header = request.headers.get("Authorization") or ""
+    if not auth_header.startswith("Bearer "):
+        return "system"
+
+    token = auth_header.split(" ", 1)[1].strip()
+    if not token or token.count(".") < 2:
+        return "system"
+
+    try:
+        # JWT format: header.payload.signature. For audit tagging we only need payload claims.
+        payload_b64 = token.split(".", 2)[1]
+        padding = "=" * (-len(payload_b64) % 4)
+        payload_bytes = base64.urlsafe_b64decode(payload_b64 + padding)
+        payload = json.loads(payload_bytes.decode("utf-8"))
+    except Exception:
+        return "system"
+
+    # Token convention used across the project: `sub` is the user/subject.
+    user_id = (
+        payload.get("user_id")
+        or payload.get("sub")
+        or payload.get("username")
+        or payload.get("email")
+    )
+    return str(user_id) if user_id else "system"
+
+
+def _get_trace_id_header(request: Request) -> str:
+    # Audit-trace middleware reads "X-Trace-Id"
+    return request.headers.get("X-Trace-Id") or request.headers.get("x-trace-id") or ""
+
+
+def _fire_and_forget_audit_event(*, action: str, user_id: str, details: str, request: Request) -> None:
+    trace_id = _get_trace_id_header(request)
+    headers = {}
+    if trace_id:
+        headers["X-Trace-Id"] = trace_id
+
+    payload = {
+        "service_name": "ms-ml",
+        "action": action,
+        "user_id": user_id,
+        "details": details,
+    }
+
+    def _post():
+        try:
+            with httpx.Client(timeout=2.5) as client:
+                client.post(AUDIT_TRACE_LOG_URL, json=payload, headers=headers)
+        except Exception:
+            # HU-29: no bloquear flujo principal por fallos de auditoría
+            pass
+
+    _audit_executor.submit(_post)
+
 @router.post("/", response_model=ExperimentResponse)
-def run_experiment(exp_req: ExperimentCreate, db: Session = Depends(get_db)):
+def run_experiment(exp_req: ExperimentCreate, db: Session = Depends(get_db), request: Request):
     # 1. Fetch data for the specified transformation run
+    user_id = "system"
+    if request is not None:
+        user_id = _extract_user_id_from_jwt(request)
+
     data_records = db.query(TransformedZoneData).filter(
         TransformedZoneData.transformation_run_id == exp_req.transformation_run_id
     ).all()
@@ -84,12 +152,28 @@ def run_experiment(exp_req: ExperimentCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Unsupported algorithm")
         
     model.fit(X_train, y_train)
+
+    if request is not None:
+        _fire_and_forget_audit_event(
+            action="MODEL_TRAINED",
+            user_id=user_id,
+            details=f"algorithm={exp_req.algorithm}, target_variable={exp_req.target_variable}, transformation_run_id={exp_req.transformation_run_id}",
+            request=request,
+        )
     
     # 4. Predict and evaluate
     y_pred = model.predict(X_test)
     r2 = r2_score(y_test, y_pred)
     mae = mean_absolute_error(y_test, y_pred)
     rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+
+    if request is not None:
+        _fire_and_forget_audit_event(
+            action="PREDICTION_GENERATED",
+            user_id=user_id,
+            details=f"algorithm={exp_req.algorithm}, r2={float(r2)}, mae={float(mae)}, rmse={float(rmse)}",
+            request=request,
+        )
     
     # 5. Persist MLExperiment
     new_exp = MLExperiment(
@@ -105,6 +189,14 @@ def run_experiment(exp_req: ExperimentCreate, db: Session = Depends(get_db)):
     db.add(new_exp)
     db.commit()
     db.refresh(new_exp)
+
+    if request is not None:
+        _fire_and_forget_audit_event(
+            action="EXPERIMENT_CREATED",
+            user_id=user_id,
+            details=f"experiment_id={new_exp.id}, transformation_run_id={exp_req.transformation_run_id}, algorithm={exp_req.algorithm}, target_variable={exp_req.target_variable}",
+            request=request,
+        )
     
     # 6. Save model and register path
     os.makedirs(MODELS_DIR, exist_ok=True)

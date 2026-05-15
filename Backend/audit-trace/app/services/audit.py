@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from typing import List
 from tenacity import retry, wait_exponential, stop_after_attempt, retry_if_exception_type
 from sqlalchemy.exc import OperationalError, SQLAlchemyError
@@ -50,3 +51,6 @@ class AuditService(IAuditService):
 
     def get_user_logs(self, user_id: str, limit: int = 100, skip: int = 0) -> List[AuditLog]:
         return self.audit_repo.get_by_user(user_id=user_id, limit=limit, skip=skip)
+
+    def get_logs_by_date_range(self, from_date: datetime, to_date: datetime) -> List[AuditLog]:
+        return self.audit_repo.get_by_date_range(from_date=from_date, to_date=to_date)
