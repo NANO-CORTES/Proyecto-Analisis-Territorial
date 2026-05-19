@@ -1,0 +1,162 @@
+[
+  {
+    "zone_code": "11001",
+    "zone_name": "Usaquén",
+    "departamento": "Bogota D.C.",
+    "cobertura_acueducto": 99.8,
+    "cobertura_aseo": 99.9,
+    "cobertura_gas": 98.5
+  },
+  {
+    "zone_code": "11002",
+    "zone_name": "Chapinero",
+    "departamento": "Bogota D.C.",
+    "cobertura_acueducto": 99.9,
+    "cobertura_aseo": 100.0,
+    "cobertura_gas": 99.2
+  },
+  {
+    "zone_code": "11003",
+    "zone_name": "Santa Fe",
+    "departamento": "Bogota D.C.",
+    "cobertura_acueducto": 98.7,
+    "cobertura_aseo": 98.9,
+    "cobertura_gas": 94.6
+  },
+  {
+    "zone_code": "11004",
+    "zone_name": "San Cristóbal",
+    "departamento": "Bogota D.C.",
+    "cobertura_acueducto": 97.4,
+    "cobertura_aseo": 98.1,
+    "cobertura_gas": 91.2
+  },
+  {
+    "zone_code": "11005",
+    "zone_name": "Usme",
+    "departamento": "Bogota D.C.",
+    "cobertura_acueducto": 94.5,
+    "cobertura_aseo": 95.8,
+    "cobertura_gas": 85.4
+  },
+  {
+    "zone_code": "11006",
+    "zone_name": "Tunjuelito",
+    "departamento": "Bogota D.C.",
+    "cobertura_acueducto": 99.2,
+    "cobertura_aseo": 99.5,
+    "cobertura_gas": 96.8
+  },
+  {
+    "zone_code": "11007",
+    "zone_name": "Bosa",
+    "departamento": "Bogota D.C.",
+    "cobertura_acueducto": 98.1,
+    "cobertura_aseo": 98.8,
+    "cobertura_gas": 95.2
+  },
+  {
+    "zone_code": "11008",
+    "zone_name": "Kennedy",
+    "departamento": "Bogota D.C.",
+    "cobertura_acueducto": 99.4,
+    "cobertura_aseo": 99.6,
+    "cobertura_gas": 97.8
+  },
+  {
+    "zone_code": "11009",
+    "zone_name": "Fontibón",
+    "departamento": "Bogota D.C.",
+    "cobertura_acueducto": 99.7,
+    "cobertura_aseo": 99.8,
+    "cobertura_gas": 98.1
+  },
+  {
+    "zone_code": "11010",
+    "zone_name": "Engativá",
+    "departamento": "Bogota D.C.",
+    "cobertura_acueducto": 99.6,
+    "cobertura_aseo": 99.7,
+    "cobertura_gas": 98.3
+  },
+  {
+    "zone_code": "11011",
+    "zone_name": "Suba",
+    "departamento": "Bogota D.C.",
+    "cobertura_acueducto": 99.5,
+    "cobertura_aseo": 99.6,
+    "cobertura_gas": 97.5
+  },
+  {
+    "zone_code": "11012",
+    "zone_name": "Barrios Unidos",
+    "departamento": "Bogota D.C.",
+    "cobertura_acueducto": 99.8,
+    "cobertura_aseo": 99.9,
+    "cobertura_gas": 98.7
+  },
+  {
+    "zone_code": "11013",
+    "zone_name": "Teusaquillo",
+    "departamento": "Bogota D.C.",
+    "cobertura_acueducto": 99.9,
+    "cobertura_aseo": 100.0,
+    "cobertura_gas": 99.1
+  },
+  {
+    "zone_code": "11014",
+    "zone_name": "Los Mártires",
+    "departamento": "Bogota D.C.",
+    "cobertura_acueducto": 98.9,
+    "cobertura_aseo": 99.2,
+    "cobertura_gas": 95.5
+  },
+  {
+    "zone_code": "11015",
+    "zone_name": "Antonio Nariño",
+    "departamento": "Bogota D.C.",
+    "cobertura_acueducto": 99.6,
+    "cobertura_aseo": 99.7,
+    "cobertura_gas": 97.9
+  },
+  {
+    "zone_code": "11016",
+    "zone_name": "Puente Aranda",
+    "departamento": "Bogota D.C.",
+    "cobertura_acueducto": 99.7,
+    "cobertura_aseo": 99.8,
+    "cobertura_gas": 98.0
+  },
+  {
+    "zone_code": "11017",
+    "zone_name": "La Candelaria",
+    "departamento": "Bogota D.C.",
+    "cobertura_acueducto": 99.2,
+    "cobertura_aseo": 99.5,
+    "cobertura_gas": 97.2
+  },
+  {
+    "zone_code": "11018",
+    "zone_name": "Rafael Uribe Uribe",
+    "departamento": "Bogota D.C.",
+    "cobertura_acueducto": 97.8,
+    "cobertura_aseo": 98.4,
+    "cobertura_gas": 92.5
+  },
+  {
+    "zone_code": "11019",
+    "zone_name": "Ciudad Bolívar",
+    "departamento": "Bogota D.C.",
+    "cobertura_acueducto": 95.2,
+    "cobertura_aseo": 96.5,
+    "cobertura_gas": 87.1
+  },
+  {
+    "zone_code": "11020",
+    "zone_name": "Sumapaz",
+    "departamento": "Bogota D.C.",
+    "cobertura_acueducto": 68.4,
+    "cobertura_aseo": 72.1,
+    "cobertura_gas": 22.5
+  }
+]

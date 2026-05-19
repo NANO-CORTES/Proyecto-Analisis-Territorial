@@ -1,0 +1,26 @@
+zone_code,zone_name,departamento,poblacion_miles,ingreso_promedio_k,indice_calidad_vida
+05001,Medellín,Antioquia,2508.4,1450.5,82.4
+05088,Bello,Antioquia,522.2,980.2,71.5
+05360,Itagüí,Antioquia,282.0,1050.4,73.8
+05266,Envigado,Antioquia,231.8,1820.6,88.2
+05615,Rionegro,Antioquia,135.4,1210.8,79.5
+76001,Cali,Valle del Cauca,2227.6,1320.4,78.6
+76109,Buenaventura,Valle del Cauca,313.5,720.5,52.4
+76520,Palmira,Valle del Cauca,312.2,950.8,69.5
+76834,Tuluá,Valle del Cauca,220.6,890.4,67.8
+76111,Buga,Valle del Cauca,115.8,910.2,68.9
+11001,Bogotá D.C.,Cundinamarca,7743.9,1650.8,84.5
+25754,Soacha,Cundinamarca,808.3,710.2,56.2
+25290,Fusagasugá,Cundinamarca,162.2,850.5,69.8
+25269,Facatativá,Cundinamarca,142.1,890.6,68.4
+25899,Zipaquirá,Cundinamarca,130.5,1020.4,74.2
+08001,Barranquilla,Atlántico,1297.0,1180.4,75.4
+08758,Soledad,Atlántico,665.0,760.2,58.9
+08433,Malambo,Atlántico,128.5,730.5,55.4
+08638,Sabanalarga,Atlántico,101.4,690.8,53.2
+08296,Galapa,Atlántico,66.8,750.4,57.8
+13001,Cartagena,Bolívar,1028.7,1120.5,71.2
+13430,Magangué,Bolívar,123.8,610.4,49.8
+13836,Turbaco,Bolívar,118.6,820.6,65.4
+13052,Arjona,Bolívar,75.4,630.2,50.5
+13244,El Carmen de Bolívar,Bolívar,78.2,580.4,46.8

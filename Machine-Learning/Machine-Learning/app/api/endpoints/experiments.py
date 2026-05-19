@@ -83,7 +83,7 @@ def _fire_and_forget_audit_event(*, action: str, user_id: str, details: str, req
     _audit_executor.submit(_post)
 
 @router.post("/", response_model=ExperimentResponse)
-def run_experiment(exp_req: ExperimentCreate, db: Session = Depends(get_db), request: Request):
+def run_experiment(exp_req: ExperimentCreate, request: Request, db: Session = Depends(get_db)):
     # 1. Fetch data for the specified transformation run
     user_id = "system"
     if request is not None:

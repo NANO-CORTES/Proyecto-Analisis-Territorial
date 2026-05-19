@@ -5,7 +5,7 @@ from app.core.config import settings
 from typing import Optional
 
 router = APIRouter()
-client = httpx.AsyncClient()
+client = httpx.AsyncClient(timeout=60.0)
 
 async def forward_request(request: Request, destination_url: str):
     trace_id = getattr(request.state, "trace_id", "")
@@ -58,7 +58,15 @@ async def proxy_ingestion(request: Request, path: str):
 
 @router.api_route("/audit/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 async def proxy_audit(request: Request, path: str):
-    url = f"{settings.MS_AUDIT_TRACE_URL}/{path}"
+    if path == "health":
+        url = f"{settings.MS_AUDIT_TRACE_URL}/health"
+    else:
+        url = f"{settings.MS_AUDIT_TRACE_URL}/api/v1/audit"
+        if path:
+            url += f"/{path}"
+        else:
+            url += "/"
+            
     if request.query_params:
         url += f"?{request.query_params}"
     return await forward_request(request, url)
@@ -100,7 +108,7 @@ async def proxy_ml(request: Request, path: str):
 
 @router.api_route("/recommendations/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 async def proxy_recommendations(request: Request, path: str):
-    url = f"http://ms-recommendations:8008/{path}"
+    url = f"{settings.MS_RECOMMENDATIONS_URL}/{path}"
     if request.query_params:
         url += f"?{request.query_params}"
     return await forward_request(request, url)

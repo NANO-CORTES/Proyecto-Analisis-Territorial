@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/AuthProvider';
 import axios from 'axios';
 import '../styles/Dashboard.css';
+import { getLatestAnalysis, downloadLatestReport, LatestAnalysisResponse } from '../services/bffApi';
 
 // ─── Colombia Data ────────────────────────────────────────────────────────────
 const DEPARTAMENTOS: Record<string, string[]> = {
@@ -26,7 +27,7 @@ const DEPARTAMENTOS: Record<string, string[]> = {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 const DashboardPage: React.FC = () => {
-  const { username, role, logout } = useAuth();
+  const { username, role, logout, token } = useAuth();
   const navigate = useNavigate();
 
   // File upload state
@@ -40,6 +41,54 @@ const DashboardPage: React.FC = () => {
   const [selectedDept, setSelectedDept] = React.useState<string>('');
   const [municipioSearch, setMunicipioSearch] = React.useState('');
   const [selectedMunicipios, setSelectedMunicipios] = React.useState<string[]>([]);
+
+  // Reportes / Latest Analysis state
+  const [latestAnalysis, setLatestAnalysis] = React.useState<LatestAnalysisResponse | null>(null);
+  const [loadingAnalysis, setLoadingAnalysis] = React.useState(true);
+  const [downloadingFormat, setDownloadingFormat] = React.useState<string | null>(null);
+  const [downloadError, setDownloadError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    let active = true;
+    const fetchLatest = async () => {
+      try {
+        const res = await getLatestAnalysis();
+        if (active) {
+          setLatestAnalysis(res);
+        }
+      } catch (err) {
+        console.error('Error fetching latest analysis:', err);
+      } finally {
+        if (active) {
+          setLoadingAnalysis(false);
+        }
+      }
+    };
+    fetchLatest();
+    return () => { active = false; };
+  }, []);
+
+  const handleDownload = async (format: 'csv' | 'json' | 'xls') => {
+    if (!latestAnalysis || latestAnalysis.status !== 'COMPLETED') return;
+    setDownloadingFormat(format);
+    setDownloadError(null);
+    try {
+      const blob = await downloadLatestReport(format);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `analisis_territorial_latest.${format}`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      console.error(`Error downloading report in ${format}:`, err);
+      setDownloadError(`Error al descargar reporte ${format.toUpperCase()}.`);
+    } finally {
+      setDownloadingFormat(null);
+    }
+  };
 
   const handleLogout = () => { logout(); navigate('/'); };
 
@@ -57,8 +106,11 @@ const DashboardPage: React.FC = () => {
 
     try {
       const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-      const response = await axios.post(`${apiBase}/api/v1/ingestion/upload`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+      const response = await axios.post(`${apiBase}/api/v1/ingestion/datasets/upload`, formData, {
+        headers: { 
+          'Content-Type': 'multipart/form-data',
+          Authorization: token ? `Bearer ${token}` : ''
+        },
         onUploadProgress: (progressEvent) => {
           const progress = progressEvent.total
             ? Math.round((progressEvent.loaded * 100) / progressEvent.total)
@@ -66,7 +118,7 @@ const DashboardPage: React.FC = () => {
           setUploadProgress(progress);
         },
       });
-      setUploadStatus({ type: 'success', message: `¡Éxito! ${response.data.filename} cargado correctamente.` });
+      setUploadStatus({ type: 'success', message: `¡Éxito! ${response.data.fileName || response.data.filename || file.name} cargado correctamente.` });
       if (fileInputRef.current) fileInputRef.current.value = '';
     } catch (error: any) {
       setUploadStatus({ type: 'error', message: 'Error al cargar el archivo. Intenta de nuevo.' });
@@ -217,16 +269,72 @@ const DashboardPage: React.FC = () => {
           </button>
 
           {/* Card: Reportes */}
-          <div className="action-card action-card-purple">
+          <div className="action-card action-card-purple reports-card">
             <div className="action-card-icon">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                 <polyline points="14 2 14 8 20 8" />
               </svg>
             </div>
-            <div className="action-card-body">
+            <div className="action-card-body" style={{ width: '100%' }}>
               <span className="action-card-title">Reportes</span>
-              <span className="action-card-subtitle">--</span>
+              
+              {loadingAnalysis ? (
+                <span className="action-card-subtitle">Cargando estado...</span>
+              ) : latestAnalysis && latestAnalysis.status === 'COMPLETED' ? (
+                <div className="reports-download-group">
+                  <span className="action-card-subtitle" style={{ marginBottom: '8px', display: 'block', fontSize: '11px', opacity: 0.85 }}>
+                    Último análisis: {new Date(latestAnalysis.created_at || '').toLocaleDateString('es-ES', {
+                      day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                    })}
+                  </span>
+                  <div className="reports-buttons">
+                    <button
+                      id="btn-download-csv"
+                      className="download-btn"
+                      onClick={() => handleDownload('csv')}
+                      disabled={downloadingFormat !== null}
+                    >
+                      {downloadingFormat === 'csv' ? 'Descargando...' : 'CSV'}
+                    </button>
+                    <button
+                      id="btn-download-json"
+                      className="download-btn"
+                      onClick={() => handleDownload('json')}
+                      disabled={downloadingFormat !== null}
+                    >
+                      {downloadingFormat === 'json' ? 'Descargando...' : 'JSON'}
+                    </button>
+                    <button
+                      id="btn-download-xls"
+                      className="download-btn"
+                      onClick={() => handleDownload('xls')}
+                      disabled={downloadingFormat !== null}
+                    >
+                      {downloadingFormat === 'xls' ? 'Descargando...' : 'Excel (XLS)'}
+                    </button>
+                  </div>
+                  {downloadError && (
+                    <span className="download-error-msg" style={{ color: '#ff6b6b', fontSize: '12px', marginTop: '6px', display: 'block' }}>
+                      {downloadError}
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <div className="reports-disabled-group">
+                  <span className="action-card-subtitle" style={{ display: 'block', marginBottom: '4px' }}>
+                    No disponible
+                  </span>
+                  <span className="reports-disabled-tooltip" style={{ fontSize: '10px', opacity: 0.7, color: '#e0b3ff', display: 'block', lineHeight: '1.2' }}>
+                    (Requiere ejecutar y completar al menos un análisis territorial)
+                  </span>
+                  <div className="reports-buttons">
+                    <button className="download-btn disabled" disabled title="Requiere análisis completado">CSV</button>
+                    <button className="download-btn disabled" disabled title="Requiere análisis completado">JSON</button>
+                    <button className="download-btn disabled" disabled title="Requiere análisis completado">Excel (XLS)</button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

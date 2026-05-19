@@ -1,47 +1,70 @@
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from pydantic import BaseModel
 from typing import Optional, Dict, Any, List
 from datetime import datetime
-import uuid
 
-# ============ MODELOS ============
-from sqlalchemy import Column, Integer, String, DateTime, JSON, create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from app.core.config import settings
+from app.core.database import engine, get_db, Base as CoreBase
+from app.models import Base as TraceBase, ProcessTrace
+from app.api.endpoints.audit import router as audit_router
 
-Base = declarative_base()
+# ============ FASTAPI APP ============
+app = FastAPI(
+    title=settings.SERVICE_NAME,
+    version=settings.VERSION
+)
 
-class ProcessTrace(Base):
-    __tablename__ = "process_traces"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    dataset_load_id = Column(String(100), nullable=False, index=True)
-    transformation_run_id = Column(String(100), nullable=True)
-    score_execution_id = Column(String(100), nullable=True)
-    event_type = Column(String(50), nullable=False)
-    status = Column(String(20), default="success")
-    parameters = Column(JSON, nullable=True)
-    result_summary = Column(JSON, nullable=True)
-    user_id = Column(String(100), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+# ============ DYNAMIC SCHEMA CREATION & TABLE INITIALIZATION ============
+@app.on_event("startup")
+def startup_event():
+    # 1. Crear el esquema si se usa PostgreSQL
+    if "postgresql" in settings.DATABASE_URL:
+        try:
+            with engine.connect() as conn:
+                conn.execute(text("CREATE SCHEMA IF NOT EXISTS audit_trace;"))
+                conn.commit()
+        except Exception as e:
+            import logging
+            logging.getLogger("uvicorn").error(f"Error creating audit_trace schema: {e}")
 
-# ============ BASE DE DATOS ============
-DATABASE_URL = "sqlite:///./audit_trace.db"
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-# Crear tablas
-Base.metadata.create_all(bind=engine)
-
-def get_db():
-    db = SessionLocal()
+    # 2. Inicializar tablas de ambos bases
     try:
-        yield db
-    finally:
-        db.close()
+        # Crea la tabla de logs de auditoría (que tiene la anotación de esquema en Postgres)
+        CoreBase.metadata.create_all(bind=engine)
+        # Crea la tabla de trazabilidad
+        TraceBase.metadata.create_all(bind=engine)
+    except Exception as e:
+        import logging
+        logging.getLogger("uvicorn").error(f"Error initializing tables: {e}")
 
-# ============ SCHEMAS ============
+# ============ HEALTH / ROOT ============
+@app.get("/")
+def root():
+    return {"message": "Audit Trace Service running"}
+
+@app.get("/health")
+def health(db: Session = Depends(get_db)):
+    db_connected = False
+    try:
+        db.execute(text("SELECT 1"))
+        db_connected = True
+    except Exception:
+        pass
+    return {
+        "status": "healthy" if db_connected else "degraded",
+        "service_name": settings.SERVICE_NAME,
+        "version": settings.VERSION,
+        "db_connected": db_connected,
+        "timestamp": datetime.utcnow().isoformat()
+    }
+
+# ============ ROUTERS ============
+# Registro del enrutador de auditoría para la UI y servicios
+app.include_router(audit_router, prefix="/api/v1/audit", tags=["Auditoría"])
+
+# ============ LOCAL SCHEMAS FOR TRACE ============
 class TraceCreate(BaseModel):
     dataset_load_id: str
     transformation_run_id: Optional[str] = None
@@ -52,27 +75,7 @@ class TraceCreate(BaseModel):
     result_summary: Optional[Dict[str, Any]] = None
     user_id: Optional[str] = None
 
-class TraceResponse(BaseModel):
-    id: int
-    dataset_load_id: str
-    event_type: str
-    status: str
-    parameters: Optional[Dict[str, Any]]
-    result_summary: Optional[Dict[str, Any]]
-    created_at: datetime
-
-# ============ FASTAPI APP ============
-app = FastAPI(title="Audit Trace Service")
-
-@app.get("/")
-def root():
-    return {"message": "Audit Trace Service running"}
-
-@app.get("/health")
-def health():
-    return {"status": "healthy", "service": "audit-trace"}
-
-# ============ ENDPOINTS ============
+# ============ ENDPOINTS DE TRAZABILIDAD (Mantenidos para compatibilidad) ============
 @app.post("/api/v1/audit/trace")
 def create_trace(trace: TraceCreate, db: Session = Depends(get_db)):
     db_trace = ProcessTrace(
@@ -110,6 +113,19 @@ def get_trace_chain(dataset_load_id: str, db: Session = Depends(get_db)):
     
     return {
         "dataset_load_id": dataset_load_id,
-        "events": events,
+        "events": [
+            {
+                "id": ev.id,
+                "dataset_load_id": ev.dataset_load_id,
+                "transformation_run_id": ev.transformation_run_id,
+                "score_execution_id": ev.score_execution_id,
+                "event_type": ev.event_type,
+                "status": ev.status,
+                "parameters": ev.parameters,
+                "result_summary": ev.result_summary,
+                "user_id": ev.user_id,
+                "created_at": ev.created_at.isoformat() if ev.created_at else None
+            } for ev in events
+        ],
         "timeline": timeline
     }

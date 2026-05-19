@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse
-from app.api.endpoints import proxy
+from app.api.endpoints import proxy, bff
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.auth_middleware import auth_middleware
 import uuid
@@ -64,6 +64,7 @@ app.add_middleware(
 )
 
 app.include_router(proxy.router, prefix="/api/v1", tags=["proxy"])
+app.include_router(bff.router)
 
 @app.get("/health")
 def health_check():

@@ -37,7 +37,7 @@ def get_ranking(
         description="Filtrar por nivel: ALTA, MEDIA o BAJA"
     ),
     page: int = Query(1, ge=1, description="Número de página (inicia en 1)"),
-    page_size: int = Query(20, ge=1, le=100, description="Resultados por página"),
+    page_size: int = Query(20, ge=1, le=10000, description="Resultados por página"),
     service: RankingService = Depends(_get_ranking_service),
 ):
     

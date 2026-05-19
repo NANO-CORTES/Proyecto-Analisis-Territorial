@@ -83,13 +83,52 @@ async def calculate_indicators(transformation_run_id: str, db: Session = Depends
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/api/v1/scoring/execute", tags=["analytics"])
-async def execute_scoring(request: ScoringRequest, db: Session = Depends(get_db)):
+async def execute_scoring(
+    request: Request,
+    transformation_run_id: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
     try:
-        
+        # Check if we have JSON body or if it is empty
+        body_data = None
+        try:
+            body_bytes = await request.body()
+            if body_bytes:
+                body_data = await request.json()
+        except Exception:
+            pass
+
+        if body_data:
+            from app.schemas.scoring import ScoringRequest
+            scoring_req = ScoringRequest(**body_data)
+        else:
+            if not transformation_run_id:
+                raise HTTPException(status_code=400, detail="transformation_run_id query param or JSON body is required")
+            
+            from app.models.ranking import IndicatorResult
+            indicators = db.query(IndicatorResult).filter(IndicatorResult.transformation_run_id == transformation_run_id).all()
+            if not indicators:
+                raise HTTPException(status_code=404, detail=f"No indicators found for run {transformation_run_id}")
+            
+            from app.schemas.scoring import ZoneIndicators, ScoringRequest
+            zones = [
+                ZoneIndicators(
+                    zone_id=ind.zone_code,
+                    poblacion=ind.population_indicator,
+                    ingreso=ind.income_indicator,
+                    educacion=ind.education_indicator,
+                    competencia=ind.competition_indicator
+                )
+                for ind in indicators
+            ]
+            user_id = _extract_user_id_from_token(request)
+            scoring_req = ScoringRequest(user_id=user_id, zones=zones)
+            
         service = ScoringService(db) 
+        return await service.execute(scoring_req)
         
-        return await service.execute(request)
-        
+    except HTTPException as he:
+        raise he
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -97,7 +136,30 @@ async def execute_scoring(request: ScoringRequest, db: Session = Depends(get_db)
 async def get_scoring_results(execution_id: str, db: Session = Depends(get_db)):
     from app.models.ranking import ZoneScore
     results = db.query(ZoneScore).filter(ZoneScore.execution_id == execution_id).all()
-    return results
+    if results:
+        return results
+        
+    # Check analytics schema and map to public schema compatible structure
+    try:
+        from app.models.scoring import ZoneScore as AnalyticsZoneScore
+        analytics_results = db.query(AnalyticsZoneScore).filter(AnalyticsZoneScore.execution_id == execution_id).all()
+        if analytics_results:
+            mapped = []
+            for r in analytics_results:
+                mapped.append({
+                    "id": str(r.id),
+                    "execution_id": r.execution_id,
+                    "zone_code": r.zone_id,
+                    "zone_name": r.zone_id,
+                    "score_value": r.score_value,
+                    "score_level": r.score_level,
+                    "rank_position": r.rank_position or 1,
+                })
+            return mapped
+    except Exception:
+        pass
+        
+    return []
 
 @router.get("/api/v1/zone-summary/{zone_code}", tags=["analytics"])
 async def get_zone_summary(zone_code: str, request: Request, db: Session = Depends(get_db)):

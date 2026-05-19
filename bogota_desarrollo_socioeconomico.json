@@ -1,0 +1,162 @@
+[
+  {
+    "zone_code": "11001",
+    "zone_name": "Usaquén",
+    "departamento": "Bogota D.C.",
+    "tasa_desempleo": 9.1,
+    "ingreso_per_capita": 2350.0,
+    "indice_pobreza_multidimensional": 3.2
+  },
+  {
+    "zone_code": "11002",
+    "zone_name": "Chapinero",
+    "departamento": "Bogota D.C.",
+    "tasa_desempleo": 7.8,
+    "ingreso_per_capita": 3450.0,
+    "indice_pobreza_multidimensional": 1.5
+  },
+  {
+    "zone_code": "11003",
+    "zone_name": "Santa Fe",
+    "departamento": "Bogota D.C.",
+    "tasa_desempleo": 11.5,
+    "ingreso_per_capita": 1250.0,
+    "indice_pobreza_multidimensional": 7.8
+  },
+  {
+    "zone_code": "11004",
+    "zone_name": "San Cristóbal",
+    "departamento": "Bogota D.C.",
+    "tasa_desempleo": 14.2,
+    "ingreso_per_capita": 820.0,
+    "indice_pobreza_multidimensional": 12.4
+  },
+  {
+    "zone_code": "11005",
+    "zone_name": "Usme",
+    "departamento": "Bogota D.C.",
+    "tasa_desempleo": 15.8,
+    "ingreso_per_capita": 680.0,
+    "indice_pobreza_multidimensional": 16.5
+  },
+  {
+    "zone_code": "11006",
+    "zone_name": "Tunjuelito",
+    "departamento": "Bogota D.C.",
+    "tasa_desempleo": 11.8,
+    "ingreso_per_capita": 1150.0,
+    "indice_pobreza_multidimensional": 8.2
+  },
+  {
+    "zone_code": "11007",
+    "zone_name": "Bosa",
+    "departamento": "Bogota D.C.",
+    "tasa_desempleo": 14.5,
+    "ingreso_per_capita": 780.0,
+    "indice_pobreza_multidimensional": 13.9
+  },
+  {
+    "zone_code": "11008",
+    "zone_name": "Kennedy",
+    "departamento": "Bogota D.C.",
+    "tasa_desempleo": 12.1,
+    "ingreso_per_capita": 1100.0,
+    "indice_pobreza_multidimensional": 9.5
+  },
+  {
+    "zone_code": "11009",
+    "zone_name": "Fontibón",
+    "departamento": "Bogota D.C.",
+    "tasa_desempleo": 9.8,
+    "ingreso_per_capita": 1750.0,
+    "indice_pobreza_multidimensional": 4.8
+  },
+  {
+    "zone_code": "11010",
+    "zone_name": "Engativá",
+    "departamento": "Bogota D.C.",
+    "tasa_desempleo": 10.4,
+    "ingreso_per_capita": 1550.0,
+    "indice_pobreza_multidimensional": 5.2
+  },
+  {
+    "zone_code": "11011",
+    "zone_name": "Suba",
+    "departamento": "Bogota D.C.",
+    "tasa_desempleo": 10.1,
+    "ingreso_per_capita": 1850.0,
+    "indice_pobreza_multidimensional": 4.5
+  },
+  {
+    "zone_code": "11012",
+    "zone_name": "Barrios Unidos",
+    "departamento": "Bogota D.C.",
+    "tasa_desempleo": 9.4,
+    "ingreso_per_capita": 2100.0,
+    "indice_pobreza_multidimensional": 3.5
+  },
+  {
+    "zone_code": "11013",
+    "zone_name": "Teusaquillo",
+    "departamento": "Bogota D.C.",
+    "tasa_desempleo": 7.5,
+    "ingreso_per_capita": 3100.0,
+    "indice_pobreza_multidimensional": 1.8
+  },
+  {
+    "zone_code": "11014",
+    "zone_name": "Los Mártires",
+    "departamento": "Bogota D.C.",
+    "tasa_desempleo": 13.5,
+    "ingreso_per_capita": 950.0,
+    "indice_pobreza_multidimensional": 11.2
+  },
+  {
+    "zone_code": "11015",
+    "zone_name": "Antonio Nariño",
+    "departamento": "Bogota D.C.",
+    "tasa_desempleo": 10.2,
+    "ingreso_per_capita": 1600.0,
+    "indice_pobreza_multidimensional": 5.1
+  },
+  {
+    "zone_code": "11016",
+    "zone_name": "Puente Aranda",
+    "departamento": "Bogota D.C.",
+    "tasa_desempleo": 10.6,
+    "ingreso_per_capita": 1520.0,
+    "indice_pobreza_multidimensional": 5.5
+  },
+  {
+    "zone_code": "11017",
+    "zone_name": "La Candelaria",
+    "departamento": "Bogota D.C.",
+    "tasa_desempleo": 12.0,
+    "ingreso_per_capita": 1350.0,
+    "indice_pobreza_multidimensional": 7.1
+  },
+  {
+    "zone_code": "11018",
+    "zone_name": "Rafael Uribe Uribe",
+    "departamento": "Bogota D.C.",
+    "tasa_desempleo": 14.8,
+    "ingreso_per_capita": 810.0,
+    "indice_pobreza_multidimensional": 13.1
+  },
+  {
+    "zone_code": "11019",
+    "zone_name": "Ciudad Bolívar",
+    "departamento": "Bogota D.C.",
+    "tasa_desempleo": 16.5,
+    "ingreso_per_capita": 650.0,
+    "indice_pobreza_multidimensional": 18.4
+  },
+  {
+    "zone_code": "11020",
+    "zone_name": "Sumapaz",
+    "departamento": "Bogota D.C.",
+    "tasa_desempleo": 12.2,
+    "ingreso_per_capita": 720.0,
+    "indice_pobreza_multidimensional": 19.1
+  }
+]
