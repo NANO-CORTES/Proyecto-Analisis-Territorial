@@ -73,8 +73,8 @@ class RankingService:
     def _validate_pagination(self, page: int, page_size: int):
         if page < 1:
             raise ValueError("El número de página debe ser mayor a 0.")
-        if page_size < 1 or page_size > 100:
-            raise ValueError("El tamaño de página debe estar entre 1 y 100.")
+        if page_size < 1 or page_size > 10000:
+            raise ValueError("El tamaño de página debe estar entre 1 y 10000.")
 
     def _to_item_from_model(self, zone) -> ZoneRankingItem:
         """Convierte modelo SQLAlchemy a schema Pydantic."""

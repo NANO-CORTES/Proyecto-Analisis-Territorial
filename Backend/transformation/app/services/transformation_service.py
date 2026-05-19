@@ -121,7 +121,9 @@ def clean_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     # Detectar y convertir columnas numéricas
     non_key_cols = [c for c in df.columns if c not in ("zone_code", "zone_name")]
     for col in non_key_cols:
-        df[col] = pd.to_numeric(df[col], errors="coerce")
+        coerced = pd.to_numeric(df[col], errors="coerce")
+        if not (coerced.isnull().all() and not df[col].isnull().all()):
+            df[col] = coerced
 
     numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
 
@@ -246,11 +248,16 @@ def generate_stats_report(
     """
     report: Dict[str, Any] = {}
     for col in numeric_cols:
+        col_min = df[col].min()
+        col_max = df[col].max()
+        col_mean = df[col].mean()
+        col_std = df[col].std()
+        
         report[col] = {
-            "min": round(float(df[col].min()), 6),
-            "max": round(float(df[col].max()), 6),
-            "mean": round(float(df[col].mean()), 6),
-            "std": round(float(df[col].std()), 6),
+            "min": round(float(col_min), 6) if pd.notna(col_min) else None,
+            "max": round(float(col_max), 6) if pd.notna(col_max) else None,
+            "mean": round(float(col_mean), 6) if pd.notna(col_mean) else None,
+            "std": round(float(col_std), 6) if pd.notna(col_std) else None,
             "null_count": null_counts.get(col, 0),
             "outliers_count": outliers_counts.get(col, 0),
         }
@@ -315,7 +322,9 @@ def process_advanced_transformation(
     # ── Paso 3: Conteo de nulos pre-limpieza ──
     non_key_cols = [c for c in df_raw.columns if c not in ("zone_code", "zone_name")]
     for col in non_key_cols:
-        df_raw[col] = pd.to_numeric(df_raw[col], errors="coerce")
+        coerced = pd.to_numeric(df_raw[col], errors="coerce")
+        if not (coerced.isnull().all() and not df_raw[col].isnull().all()):
+            df_raw[col] = coerced
     numeric_cols = df_raw.select_dtypes(include=[np.number]).columns.tolist()
     null_counts = {col: int(df_raw[col].isnull().sum()) for col in numeric_cols}
 

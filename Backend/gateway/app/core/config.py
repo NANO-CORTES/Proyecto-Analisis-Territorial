@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     MS_ANALYTICS_URL: str = "http://ms-analytics:8005"
     MS_AUTH_URL: str = "http://ms-auth:8006"
     MS_ML_URL: str = "http://machine-learning:8007"
+    MS_RECOMMENDATIONS_URL: str = "http://ms-recommendations:8009"
     SECRET_KEY: str = "7963625368a52994073361e699f7d3c907727142b474e2a87474a87a747"
     ALGORITHM: str = "HS256"
 

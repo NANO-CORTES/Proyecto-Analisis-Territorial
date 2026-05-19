@@ -10,6 +10,8 @@ from app.interfaces.datasetRepo import IDatasetRepository
 from app.schemas.dataset import DatasetResponse, ZoneListResponse
 from app.api.deps import getDatasetRepository, getIngestionService
 
+from app.core.exceptions import DomainException
+
 router = APIRouter()
 logger = logging.getLogger("IngestionEndpoint")
 
@@ -43,6 +45,14 @@ async def uploadDataset(
         )
         
         return dataset
+    except DomainException as e:
+        await log_audit_action(
+            action="UPLOAD_DATASET_FAILED",
+            details=f"Fallo al cargar {file.filename}: {e.message}",
+            user_id=user_id,
+            trace_id=trace_id
+        )
+        raise HTTPException(status_code=e.status_code, detail=e.message)
     except Exception as e:
         # Log failure to audit
         await log_audit_action(

@@ -26,3 +26,4 @@ def init_db():
     
     # Crea las tablas de Analítica sin tocar las de los otros servicios
     Base.metadata.create_all(bind=engine)
+    RankingBase.metadata.create_all(bind=engine)

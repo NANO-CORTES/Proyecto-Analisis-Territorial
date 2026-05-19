@@ -34,6 +34,24 @@ class RankingRepository(IRankingRepository):
         self._db = db
 
     def get_execution(self, execution_id: str) -> Optional[ScoreExecution]:
+        # 1. Search analytics schema first
+        try:
+            from app.models.scoring import ScoreExecution as AnalyticsScoreExecution
+            ae = self._db.query(AnalyticsScoreExecution).filter(
+                AnalyticsScoreExecution.id == execution_id
+            ).first()
+            if ae:
+                return ScoreExecution(
+                    id=ae.id,
+                    transformation_run_id=ae.transformation_run_id,
+                    configuration_id=ae.configuration_id,
+                    total_zones=len(ae.scores) if ae.scores else 0,
+                    created_at=ae.created_at
+                )
+        except Exception:
+            pass
+
+        # 2. Fallback to public schema
         return self._db.query(ScoreExecution).filter(
             ScoreExecution.id == execution_id
         ).first()
@@ -45,6 +63,56 @@ class RankingRepository(IRankingRepository):
         limit: int,
         offset: int,
     ) -> Tuple[List[ZoneScore], int]:
+        # 1. Check analytics schema first
+        try:
+            from app.models.scoring import ZoneScore as AnalyticsZoneScore
+            from app.models.scoring import ScoreExecution as AnalyticsScoreExecution
+            
+            ae = self._db.query(AnalyticsScoreExecution).filter(
+                AnalyticsScoreExecution.id == execution_id
+            ).first()
+            if ae:
+                query_analytics = self._db.query(AnalyticsZoneScore).filter(
+                    AnalyticsZoneScore.execution_id == execution_id
+                )
+                if level:
+                    query_analytics = query_analytics.filter(AnalyticsZoneScore.score_level == level)
+                
+                total = query_analytics.with_entities(func.count(AnalyticsZoneScore.id)).scalar() or 0
+                if total > 0:
+                    rows = query_analytics.order_by(AnalyticsZoneScore.score_value.desc()).offset(offset).limit(limit).all()
+                    
+                    mapped_zones = []
+                    for i, r in enumerate(rows, start=offset + 1):
+                        # Try to find zone_name from indicator results
+                        from app.models.ranking import IndicatorResult
+                        ind = self._db.query(IndicatorResult).filter(
+                            IndicatorResult.transformation_run_id == ae.transformation_run_id,
+                            IndicatorResult.zone_code == r.zone_id
+                        ).first()
+                        zone_name = ind.zone_name if ind else r.zone_id
+                        
+                        lvl = ScoreLevel.BAJA
+                        if r.score_level == "ALTA":
+                            lvl = ScoreLevel.ALTA
+                        elif r.score_level == "MEDIA":
+                            lvl = ScoreLevel.MEDIA
+                        
+                        mapped_zones.append(ZoneScore(
+                            id=str(r.id),
+                            execution_id=r.execution_id,
+                            zone_code=r.zone_id,
+                            zone_name=zone_name,
+                            score_value=r.score_value,
+                            score_level=lvl,
+                            rank_position=r.rank_position or i,
+                            created_at=getattr(r, "created_at", None)
+                        ))
+                    return mapped_zones, total
+        except Exception:
+            pass
+
+        # 2. Fallback to public schema
         query = self._db.query(ZoneScore).filter(
             ZoneScore.execution_id == execution_id
         )

@@ -390,6 +390,7 @@ const AnalysisPage: React.FC = () => {
     } finally {
       setIsRunning(false);
     }
+  }, []);
   // ═══════════════════════════════════════════════════════════════════════════
   // FUNCIONES DE ACCIÓN - Handlers para cada paso del flujo
   // ═══════════════════════════════════════════════════════════════════════════

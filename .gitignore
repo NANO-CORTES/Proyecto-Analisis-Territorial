@@ -102,6 +102,7 @@ tmp/
 
 # Documentos de uso para referencia interna
 Plataforma_Analitica_COMPLETA.docx
+~$*
 dataset_territorial_completo.csv
 dataset_territorial_completo.json
 seed_profiles.py

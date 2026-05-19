@@ -95,7 +95,7 @@ services:
     ports:
       - "8005:8005"
     env_file:
-      - ./Backend/analytics/.env
+      - .env
     volumes:
       - shared_data:/app/storage
       - ./Backend/analytics:/app
@@ -142,6 +142,23 @@ services:
     networks:
       - plataforma-net
 
+  ms-recommendations:
+    build:
+      context: ./Backend/recommendations
+      dockerfile: Dockerfile
+    container_name: ms-recommendations
+    ports:
+      - "8009:8009"
+    env_file:
+      - .env
+    volumes:
+      - ./Backend/recommendations:/app
+    depends_on:
+      db-postgres:
+        condition: service_healthy
+    networks:
+      - plataforma-net
+
   bff-gateway:
     build:
       context: ./Backend/gateway
@@ -158,6 +175,7 @@ services:
       - ms-analytics
       - ms-auth
       - machine-learning
+      - ms-recommendations
     volumes:
       - ./Backend/gateway:/app
     networks:

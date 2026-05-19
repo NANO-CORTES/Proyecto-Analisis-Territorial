@@ -32,7 +32,7 @@ def test_auth():
 def test_ingestion(token):
     print("\nTesting Ingestion...")
     headers = {"Authorization": f"Bearer {token}"}
-    files = {'file': ('test.csv', 'zone_code,zone_name,score_value,score_level\nBOG01,Test Zone,0.95,ALTA')}
+    files = {'file': ('test.csv', 'zone_code,zone_name,score_value,income,population,education\nBOG01,Test Zone,0.95,1000,5000,0.8')}
     data = {"sourceName": "Test Source", "sourceType": "CSV"}
     resp = requests.post(f"{BASE_URL}/ingestion/datasets/upload", headers=headers, files=files, data=data)
     if resp.status_code == 200:
@@ -47,7 +47,7 @@ def test_ranking(token):
     print("\nTesting Ranking...")
     headers = {"Authorization": f"Bearer {token}"}
     # Using mock data by providing a random execution_id
-    resp = requests.get(f"{BASE_URL}/analytics/ranking?execution_id=test-exec", headers=headers)
+    resp = requests.get(f"{BASE_URL}/analytics/api/v1/ranking?execution_id=test-exec", headers=headers)
     if resp.status_code == 200:
         print(f"Ranking successful: {len(resp.json()['data'])} items found")
     else:

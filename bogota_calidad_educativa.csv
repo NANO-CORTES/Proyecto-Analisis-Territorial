@@ -1,0 +1,21 @@
+zone_code,zone_name,departamento,matriculados_oficial,tasa_desercion,puntaje_saber_11
+11001,Usaquén,Bogota D.C.,42500,1.25,312.4
+11002,Chapinero,Bogota D.C.,12800,0.95,325.8
+11003,Santa Fe,Bogota D.C.,28400,2.10,298.1
+11004,San Cristóbal,Bogota D.C.,68900,2.45,289.5
+11005,Usme,Bogota D.C.,89200,3.10,278.4
+11006,Tunjuelito,Bogota D.C.,35600,1.85,294.2
+11007,Bosa,Bogota D.C.,112400,2.80,281.3
+11008,Kennedy,Bogota D.C.,148900,2.20,295.6
+11009,Fontibón,Bogota D.C.,51200,1.40,308.2
+11010,Engativá,Bogota D.C.,105300,1.65,305.1
+11011,Suba,Bogota D.C.,162400,1.75,309.7
+11012,Barrios Unidos,Bogota D.C.,22600,1.10,314.5
+11013,Teusaquillo,Bogota D.C.,14200,0.75,332.6
+11014,Los Mártires,Bogota D.C.,25100,3.25,285.4
+11015,Antonio Nariño,Bogota D.C.,19800,1.50,303.8
+11016,Puente Aranda,Bogota D.C.,44200,1.60,301.5
+11017,La Candelaria,Bogota D.C.,8500,1.35,311.2
+11018,Rafael Uribe Uribe,Bogota D.C.,72400,2.70,284.9
+11019,Ciudad Bolívar,Bogota D.C.,124500,3.40,274.6
+11020,Sumapaz,Bogota D.C.,3100,2.90,269.8
