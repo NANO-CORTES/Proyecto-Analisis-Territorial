@@ -1,0 +1,21 @@
+zone_code,zone_name,departamento,population_density,average_income,education_level,economic_activity_index,commercial_presence_index,tasa_desempleo,ingreso_per_capita,puntaje_saber_11,indice_pobreza_multidimensional
+11001,Usaquén,Bogota D.C.,15200,4200000,85,82,75,9.1,2350.0,312.4,3.2
+11002,Chapinero,Bogota D.C.,13100,5100000,90,88,85,7.8,3450.0,325.8,1.5
+11003,Santa Fe,Bogota D.C.,18500,1200000,60,55,50,11.5,1250.0,298.1,7.8
+11004,San Cristóbal,Bogota D.C.,22300,900000,55,50,45,14.2,820.0,289.5,12.4
+11005,Usme,Bogota D.C.,21500,850000,52,48,40,15.8,680.0,278.4,16.5
+11006,Tunjuelito,Bogota D.C.,19800,1150000,62,58,52,11.8,1150.0,294.2,8.2
+11007,Bosa,Bogota D.C.,24100,980000,58,54,48,14.5,780.0,281.3,13.9
+11008,Kennedy,Bogota D.C.,23500,1300000,65,60,58,12.1,1100.0,295.6,9.5
+11009,Fontibón,Bogota D.C.,16200,1850000,75,72,68,9.8,1750.0,308.2,4.8
+11010,Engativá,Bogota D.C.,21200,1650000,70,68,65,10.4,1550.0,305.1,5.2
+11011,Suba,Bogota D.C.,20500,2100000,72,70,66,10.1,1850.0,309.7,4.5
+11012,Barrios Unidos,Bogota D.C.,17400,2250000,78,75,70,9.4,2100.0,314.5,3.5
+11013,Teusaquillo,Bogota D.C.,14500,3800000,88,80,78,7.5,3100.0,332.6,1.8
+11014,Los Mártires,Bogota D.C.,19200,1050000,64,62,55,13.5,950.0,285.4,11.2
+11015,Antonio Nariño,Bogota D.C.,18100,1700000,68,65,60,10.2,1600.0,303.8,5.1
+11016,Puente Aranda,Bogota D.C.,16800,1550000,71,69,64,10.6,1520.0,301.5,5.5
+11017,La Candelaria,Bogota D.C.,15500,1400000,82,78,74,12.0,1350.0,311.2,7.1
+11018,Rafael Uribe Uribe,Bogota D.C.,22800,950000,56,52,47,14.8,810.0,284.9,13.1
+11019,Ciudad Bolívar,Bogota D.C.,25100,750000,48,45,38,16.5,650.0,274.6,18.4
+11020,Sumapaz,Bogota D.C.,2100,800000,50,42,30,12.2,720.0,269.8,19.1

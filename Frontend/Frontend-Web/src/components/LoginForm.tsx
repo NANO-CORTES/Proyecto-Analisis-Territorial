@@ -131,6 +131,33 @@ const LoginForm: React.FC = () => {
           'Iniciar Sesión'
         )}
       </button>
+
+      <div style={{ position: 'relative', margin: '1.5rem 0 0.5rem', textAlign: 'center' }}>
+        <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, borderTop: '1px solid rgba(255,255,255,0.1)' }}></div>
+        <span style={{ position: 'relative', background: 'rgba(30, 41, 59, 1)', padding: '0 10px', color: '#94a3b8', fontSize: '0.85rem' }}>O</span>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => navigate('/register')}
+        style={{
+          width: '100%',
+          padding: '0.85rem',
+          background: 'rgba(255, 255, 255, 0.05)',
+          border: '1px solid rgba(255, 255, 255, 0.15)',
+          borderRadius: '12px',
+          color: '#f1f5f9',
+          fontSize: '0.9375rem',
+          fontWeight: 600,
+          cursor: 'pointer',
+          transition: 'all 0.2s',
+          marginTop: '0.5rem'
+        }}
+        onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+        onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
+      >
+        Crear Cuenta
+      </button>
     </form>
   );
 };

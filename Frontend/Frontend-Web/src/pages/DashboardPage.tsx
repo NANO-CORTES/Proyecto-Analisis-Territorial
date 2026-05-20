@@ -2,115 +2,146 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/AuthProvider';
 import axios from 'axios';
+import { downloadLatestReport } from '../services/bffApi';
 import '../styles/Dashboard.css';
-import { getLatestAnalysis, downloadLatestReport, LatestAnalysisResponse } from '../services/bffApi';
 
-// ─── Colombia Data ────────────────────────────────────────────────────────────
 const DEPARTAMENTOS: Record<string, string[]> = {
-  'Antioquia': ['Medellín', 'Bello', 'Itagüí', 'Envigado', 'Rionegro', 'Apartadó', 'Turbo', 'Caucasia'],
-  'Valle del Cauca': ['Cali', 'Buenaventura', 'Palmira', 'Tuluá', 'Manizales', 'Buga', 'Cartago'],
-  'Cundinamarca': ['Bogotá D.C.', 'Soacha', 'Fusagasugá', 'Facatativá', 'Zipaquirá', 'Chía', 'Madrid'],
-  'Atlántico': ['Barranquilla', 'Soledad', 'Malambo', 'Sabanalarga', 'Galapa', 'Puerto Colombia'],
-  'Bolívar': ['Cartagena', 'Magangué', 'Turbaco', 'Arjona', 'El Carmen de Bolívar'],
-  'Santander': ['Bucaramanga', 'Floridablanca', 'Girón', 'Piedecuesta', 'Barrancabermeja'],
-  'Nariño': ['Pasto', 'Tumaco', 'Ipiales', 'Túquerres', 'La Unión'],
-  'Córdoba': ['Montería', 'Planeta Rica', 'Sahagún', 'Lorica', 'Cereté'],
-  'Tolima': ['Ibagué', 'Espinal', 'Melgar', 'Chaparral', 'Girardot'],
-  'Cauca': ['Popayán', 'Santander de Quilichao', 'Puerto Tejada', 'Guapi', 'Miranda'],
-  'Huila': ['Neiva', 'Pitalito', 'Garzón', 'La Plata', 'Campoalegre'],
-  'Boyacá': ['Tunja', 'Duitama', 'Sogamoso', 'Chiquinquirá', 'Paipa'],
-  'Magdalena': ['Santa Marta', 'Ciénaga', 'Fundación', 'El Banco', 'Plato'],
-  'Cesar': ['Valledupar', 'Aguachica', 'Agustín Codazzi', 'La Jagua de Ibirico'],
-  'Meta': ['Villavicencio', 'Acacías', 'Granada', 'Puerto López', 'Restrepo'],
+  'Antioquia': ['Medellin', 'Bello', 'Itagui', 'Envigado', 'Rionegro', 'Apartado', 'Turbo', 'Caucasia'],
+  'Valle del Cauca': ['Cali', 'Buenaventura', 'Palmira', 'Tulua', 'Manizales', 'Buga', 'Cartago'],
+  'Cundinamarca': ['Bogota D.C.', 'Soacha', 'Fusagasuga', 'Facatativa', 'Zipaquira', 'Chia', 'Madrid'],
+  'Atlantico': ['Barranquilla', 'Soledad', 'Malambo', 'Sabanalarga', 'Galapa', 'Puerto Colombia'],
+  'Bolivar': ['Cartagena', 'Magangue', 'Turbaco', 'Arjona', 'El Carmen de Bolivar'],
+  'Santander': ['Bucaramanga', 'Floridablanca', 'Giron', 'Piedecuesta', 'Barrancabermeja'],
+  'Narino': ['Pasto', 'Tumaco', 'Ipiales', 'Tuquerres', 'La Union'],
+  'Cordoba': ['Monteria', 'Planeta Rica', 'Sahagun', 'Lorica', 'Cerete'],
+  'Tolima': ['Ibague', 'Espinal', 'Melgar', 'Chaparral', 'Girardot'],
+  'Cauca': ['Popayan', 'Santander de Quilichao', 'Puerto Tejada', 'Guapi', 'Miranda'],
+  'Huila': ['Neiva', 'Pitalito', 'Garzon', 'La Plata', 'Campoalegre'],
+  'Boyaca': ['Tunja', 'Duitama', 'Sogamoso', 'Chiquinquira', 'Paipa'],
+  'Magdalena': ['Santa Marta', 'Cienaga', 'Fundacion', 'El Banco', 'Plato'],
+  'Cesar': ['Valledupar', 'Aguachica', 'Agustin Codazzi', 'La Jagua de Ibirico'],
+  'Meta': ['Villavicencio', 'Acacias', 'Granada', 'Puerto Lopez', 'Restrepo'],
 };
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+type ReportFormat = 'csv' | 'json' | 'xls';
 
 const DashboardPage: React.FC = () => {
-  const { username, role, logout, token } = useAuth();
+  const { username, role, logout } = useAuth();
   const navigate = useNavigate();
 
-  // File upload state
   const [isUploading, setIsUploading] = React.useState(false);
   const [uploadProgress, setUploadProgress] = React.useState(0);
   const [uploadStatus, setUploadStatus] = React.useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [showUploadPanel, setShowUploadPanel] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  // Territories state
   const [selectedDept, setSelectedDept] = React.useState<string>('');
   const [municipioSearch, setMunicipioSearch] = React.useState('');
   const [selectedMunicipios, setSelectedMunicipios] = React.useState<string[]>([]);
 
-  // Reportes / Latest Analysis state
-  const [latestAnalysis, setLatestAnalysis] = React.useState<LatestAnalysisResponse | null>(null);
-  const [loadingAnalysis, setLoadingAnalysis] = React.useState(true);
-  const [downloadingFormat, setDownloadingFormat] = React.useState<string | null>(null);
-  const [downloadError, setDownloadError] = React.useState<string | null>(null);
+  const [downloadModalOpen, setDownloadModalOpen] = React.useState(false);
+  const [downloadError, setDownloadError] = React.useState('');
+  const [downloadSuccess, setDownloadSuccess] = React.useState('');
+  const [downloading, setDownloading] = React.useState(false);
 
-  React.useEffect(() => {
-    let active = true;
-    const fetchLatest = async () => {
-      try {
-        const res = await getLatestAnalysis();
-        if (active) {
-          setLatestAnalysis(res);
-        }
-      } catch (err) {
-        console.error('Error fetching latest analysis:', err);
-      } finally {
-        if (active) {
-          setLoadingAnalysis(false);
-        }
-      }
-    };
-    fetchLatest();
-    return () => { active = false; };
-  }, []);
+  const [showReportsModal, setShowReportsModal] = React.useState(false);
 
-  const handleDownload = async (format: 'csv' | 'json' | 'xls') => {
-    if (!latestAnalysis || latestAnalysis.status !== 'COMPLETED') return;
-    setDownloadingFormat(format);
-    setDownloadError(null);
-    try {
-      const blob = await downloadLatestReport(format);
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `analisis_territorial_latest.${format}`);
-      document.body.appendChild(link);
-      link.click();
-      link.parentNode?.removeChild(link);
-      window.URL.revokeObjectURL(url);
-    } catch (err: any) {
-      console.error(`Error downloading report in ${format}:`, err);
-      setDownloadError(`Error al descargar reporte ${format.toUpperCase()}.`);
-    } finally {
-      setDownloadingFormat(null);
-    }
-  };
+  const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8001';
 
   const handleLogout = () => { logout(); navigate('/'); };
 
-  // ── File upload ────────────────────────────────────────────────────────────
+  const buildCsv = (zones: any[]): string => {
+    const header = 'rank,zone_code,zone_name,score,level,poblacion,ingresos,educacion,competitividad,recomendacion';
+    const lines = zones.map((z: any, i: number) => {
+      const inds: Record<string, number> = {};
+      (z.indicators || []).forEach((ind: any) => { inds[ind.name?.toLowerCase()] = ind.value; });
+      const rec = (z.recommendation || '').replace(/[\r\n,]+/g, ' ').replace(/"/g, '""');
+      return [
+        i + 1,
+        z.zone_code ?? '',
+        z.name ?? '',
+        z.score ?? '',
+        z.level ?? '',
+        inds.poblacion ?? '',
+        inds.ingresos ?? '',
+        inds.educacion ?? '',
+        inds.competitividad ?? '',
+        `"${rec}"`,
+      ].join(',');
+    });
+    return [header, ...lines].join('\n');
+  };
+
+  const buildXls = (zones: any[]): string => {
+    const rows = zones.map((z: any, i: number) => {
+      const inds: Record<string, number> = {};
+      (z.indicators || []).forEach((ind: any) => { inds[ind.name?.toLowerCase()] = ind.value; });
+      return `<Row>
+        <Cell><Data ss:Type="Number">${i + 1}</Data></Cell>
+        <Cell><Data ss:Type="String">${z.zone_code ?? ''}</Data></Cell>
+        <Cell><Data ss:Type="String">${z.name ?? ''}</Data></Cell>
+        <Cell><Data ss:Type="Number">${z.score ?? 0}</Data></Cell>
+        <Cell><Data ss:Type="String">${z.level ?? ''}</Data></Cell>
+        <Cell><Data ss:Type="Number">${inds.poblacion ?? 0}</Data></Cell>
+        <Cell><Data ss:Type="Number">${inds.ingresos ?? 0}</Data></Cell>
+        <Cell><Data ss:Type="Number">${inds.educacion ?? 0}</Data></Cell>
+        <Cell><Data ss:Type="Number">${inds.competitividad ?? 0}</Data></Cell>
+      </Row>`;
+    }).join('\n');
+    return `<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+<Worksheet ss:Name="Ranking">
+<Table>
+<Row>
+  <Cell><Data ss:Type="String">rank</Data></Cell>
+  <Cell><Data ss:Type="String">zone_code</Data></Cell>
+  <Cell><Data ss:Type="String">zone_name</Data></Cell>
+  <Cell><Data ss:Type="String">score</Data></Cell>
+  <Cell><Data ss:Type="String">level</Data></Cell>
+  <Cell><Data ss:Type="String">poblacion</Data></Cell>
+  <Cell><Data ss:Type="String">ingresos</Data></Cell>
+  <Cell><Data ss:Type="String">educacion</Data></Cell>
+  <Cell><Data ss:Type="String">competitividad</Data></Cell>
+</Row>
+${rows}
+</Table>
+</Worksheet>
+</Workbook>`;
+  };
+
+  const handleDownloadReport = async (format: ReportFormat) => {
+    setDownloadError('');
+    try {
+      const blob = await downloadLatestReport(format);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `reporte_territorial.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setDownloadSuccess(`Reporte descargado correctamente en formato ${format.toUpperCase()}`);
+      setTimeout(() => {
+          setDownloadSuccess('');
+          setDownloadModalOpen(false);
+      }, 3000);
+    } catch (err: any) {
+      setDownloadError(err.message || 'Error al descargar el reporte.');
+    }
+  };
+
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
     const formData = new FormData();
     formData.append('file', file);
-
     setIsUploading(true);
     setUploadProgress(0);
     setUploadStatus(null);
-
     try {
-      const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-      const response = await axios.post(`${apiBase}/api/v1/ingestion/datasets/upload`, formData, {
-        headers: { 
-          'Content-Type': 'multipart/form-data',
-          Authorization: token ? `Bearer ${token}` : ''
-        },
+      const response = await axios.post(`${apiBase}/api/v1/ingestion/upload`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress: (progressEvent) => {
           const progress = progressEvent.total
             ? Math.round((progressEvent.loaded * 100) / progressEvent.total)
@@ -118,17 +149,15 @@ const DashboardPage: React.FC = () => {
           setUploadProgress(progress);
         },
       });
-      setUploadStatus({ type: 'success', message: `¡Éxito! ${response.data.fileName || response.data.filename || file.name} cargado correctamente.` });
+      setUploadStatus({ type: 'success', message: `Exito: ${response.data.filename || file.name} cargado correctamente.` });
       if (fileInputRef.current) fileInputRef.current.value = '';
-    } catch (error: any) {
+    } catch {
       setUploadStatus({ type: 'error', message: 'Error al cargar el archivo. Intenta de nuevo.' });
-      console.error('Upload error:', error);
     } finally {
       setIsUploading(false);
     }
   };
 
-  // ── Municipios ─────────────────────────────────────────────────────────────
   const currentMunicipios = selectedDept ? DEPARTAMENTOS[selectedDept] ?? [] : [];
   const filteredMunicipios = currentMunicipios.filter(m =>
     m.toLowerCase().includes(municipioSearch.toLowerCase())
@@ -142,68 +171,30 @@ const DashboardPage: React.FC = () => {
 
   return (
     <div className="dashboard-page">
-      {/* ── Header ── */}
       <header className="dashboard-header">
         <div className="dashboard-brand">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
           </svg>
-          <span>Análisis Territorial</span>
+          <span>Analisis Territorial</span>
         </div>
         <nav className="dashboard-nav">
-          <button className="nav-link active" onClick={() => navigate('/dashboard')}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-              <polyline points="9 22 9 12 15 12 15 22" />
-            </svg>
-            Dashboard
-          </button>
-
+          <button className="nav-link active" onClick={() => navigate('/dashboard')}>Dashboard</button>
           {role === 'ADMIN' && (
             <>
-              <button className="nav-link" onClick={() => navigate('/admin/users')}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                </svg>
-                Gestión de Usuarios
-              </button>
-              <button className="nav-link" onClick={() => navigate('/admin/ml-experiments')}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                  <line x1="3" y1="9" x2="21" y2="9" />
-                  <line x1="9" y1="21" x2="9" y2="9" />
-                </svg>
-                Experimentos ML
-              </button>
-              <button className="nav-link" onClick={() => navigate('/admin/audit')}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                  <path d="M9 12l2 2 4-4" />
-                </svg>
-                Auditoría
-              </button>
+              <button className="nav-link" onClick={() => navigate('/admin/users')}>Gestion de Usuarios</button>
+              <button className="nav-link" onClick={() => navigate('/admin/ml-experiments')}>Experimentos ML</button>
             </>
           )}
         </nav>
         <div className="dashboard-user">
           <span className="user-greeting">Hola, <strong>{username}</strong></span>
           <span className="user-role-badge">{role}</span>
-          <button onClick={handleLogout} className="btn-logout">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-              <polyline points="16 17 21 12 16 7" />
-              <line x1="21" y1="12" x2="9" y2="12" />
-            </svg>
-            Salir
-          </button>
+          <button onClick={handleLogout} className="btn-logout">Salir</button>
         </div>
       </header>
 
       <main className="dashboard-main">
-        {/* ── Welcome ── */}
         <div className="welcome-card">
           <div className="welcome-icon">
             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -211,14 +202,11 @@ const DashboardPage: React.FC = () => {
               <polyline points="22 4 12 14.01 9 11.01" />
             </svg>
           </div>
-          <h1>¡Bienvenido, {username}!</h1>
-          <p>Sistema de Análisis Territorial — Selecciona un territorio o inicia un análisis.</p>
+          <h1>Bienvenido, {username}</h1>
+          <p>Sistema de Analisis Territorial. Selecciona un territorio o inicia un analisis.</p>
         </div>
 
-        {/* ── Top Action Cards ── */}
         <div className="action-cards-grid">
-
-          {/* Card: Territorios */}
           <div className="action-card action-card-blue">
             <div className="action-card-icon">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -229,7 +217,6 @@ const DashboardPage: React.FC = () => {
             <div className="action-card-body">
               <span className="action-card-title">Territorios</span>
               <select
-                id="dept-select"
                 className="dept-select"
                 value={selectedDept}
                 onChange={e => {
@@ -246,9 +233,7 @@ const DashboardPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Card: Análisis */}
           <button
-            id="btn-start-analysis"
             className="action-card action-card-green action-card-btn"
             onClick={() => navigate('/analysis')}
           >
@@ -258,89 +243,35 @@ const DashboardPage: React.FC = () => {
               </svg>
             </div>
             <div className="action-card-body">
-              <span className="action-card-title">Análisis</span>
+              <span className="action-card-title">Analisis</span>
               <span className="action-card-subtitle">
                 {selectedMunicipios.length > 0
                   ? `${selectedMunicipios.length} municipio(s) seleccionado(s)`
-                  : 'Iniciar análisis territorial'}
+                  : 'Iniciar analisis territorial'}
               </span>
             </div>
-            <div className="action-card-arrow">→</div>
+            <div className="action-card-arrow">{'->'}</div>
           </button>
 
-          {/* Card: Reportes */}
-          <div className="action-card action-card-purple reports-card">
+          <button
+            type="button"
+            className="action-card action-card-purple action-card-btn"
+            onClick={() => setShowReportsModal(true)}
+          >
             <div className="action-card-icon">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                 <polyline points="14 2 14 8 20 8" />
               </svg>
             </div>
-            <div className="action-card-body" style={{ width: '100%' }}>
+            <div className="action-card-body">
               <span className="action-card-title">Reportes</span>
-              
-              {loadingAnalysis ? (
-                <span className="action-card-subtitle">Cargando estado...</span>
-              ) : latestAnalysis && latestAnalysis.status === 'COMPLETED' ? (
-                <div className="reports-download-group">
-                  <span className="action-card-subtitle" style={{ marginBottom: '8px', display: 'block', fontSize: '11px', opacity: 0.85 }}>
-                    Último análisis: {new Date(latestAnalysis.created_at || '').toLocaleDateString('es-ES', {
-                      day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
-                    })}
-                  </span>
-                  <div className="reports-buttons">
-                    <button
-                      id="btn-download-csv"
-                      className="download-btn"
-                      onClick={() => handleDownload('csv')}
-                      disabled={downloadingFormat !== null}
-                    >
-                      {downloadingFormat === 'csv' ? 'Descargando...' : 'CSV'}
-                    </button>
-                    <button
-                      id="btn-download-json"
-                      className="download-btn"
-                      onClick={() => handleDownload('json')}
-                      disabled={downloadingFormat !== null}
-                    >
-                      {downloadingFormat === 'json' ? 'Descargando...' : 'JSON'}
-                    </button>
-                    <button
-                      id="btn-download-xls"
-                      className="download-btn"
-                      onClick={() => handleDownload('xls')}
-                      disabled={downloadingFormat !== null}
-                    >
-                      {downloadingFormat === 'xls' ? 'Descargando...' : 'Excel (XLS)'}
-                    </button>
-                  </div>
-                  {downloadError && (
-                    <span className="download-error-msg" style={{ color: '#ff6b6b', fontSize: '12px', marginTop: '6px', display: 'block' }}>
-                      {downloadError}
-                    </span>
-                  )}
-                </div>
-              ) : (
-                <div className="reports-disabled-group">
-                  <span className="action-card-subtitle" style={{ display: 'block', marginBottom: '4px' }}>
-                    No disponible
-                  </span>
-                  <span className="reports-disabled-tooltip" style={{ fontSize: '10px', opacity: 0.7, color: '#e0b3ff', display: 'block', lineHeight: '1.2' }}>
-                    (Requiere ejecutar y completar al menos un análisis territorial)
-                  </span>
-                  <div className="reports-buttons">
-                    <button className="download-btn disabled" disabled title="Requiere análisis completado">CSV</button>
-                    <button className="download-btn disabled" disabled title="Requiere análisis completado">JSON</button>
-                    <button className="download-btn disabled" disabled title="Requiere análisis completado">Excel (XLS)</button>
-                  </div>
-                </div>
-              )}
+              <span className="action-card-subtitle">Descargar ultimo analisis</span>
             </div>
-          </div>
-
+            <div className="action-card-arrow">{'->'}</div>
+          </button>
         </div>
 
-        {/* ── Municipios Cargados ── */}
         <div className="municipios-section">
           <div className="municipios-header">
             <div className="municipios-title">
@@ -354,15 +285,10 @@ const DashboardPage: React.FC = () => {
               )}
             </div>
             <div className="municipios-search-wrap">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
               <input
-                id="municipio-search"
                 type="text"
                 className="municipios-search"
-                placeholder="Buscar municipio o código..."
+                placeholder="Buscar municipio..."
                 value={municipioSearch}
                 onChange={e => setMunicipioSearch(e.target.value)}
                 disabled={!selectedDept}
@@ -373,18 +299,10 @@ const DashboardPage: React.FC = () => {
           <div className="municipios-body">
             {!selectedDept ? (
               <div className="municipios-empty">
-                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                  <circle cx="12" cy="10" r="3" />
-                </svg>
-                <p>Selecciona un departamento en la tarjeta superior para ver sus municipios cargados.</p>
+                <p>Selecciona un departamento para ver sus municipios.</p>
               </div>
             ) : filteredMunicipios.length === 0 ? (
               <div className="municipios-empty">
-                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <circle cx="11" cy="11" r="8" />
-                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                </svg>
                 <p>No se encontraron municipios con ese criterio.</p>
               </div>
             ) : (
@@ -394,14 +312,9 @@ const DashboardPage: React.FC = () => {
                     key={m}
                     className={`municipio-chip ${selectedMunicipios.includes(m) ? 'selected' : ''}`}
                     onClick={() => toggleMunicipio(m)}
-                    title={selectedMunicipios.includes(m) ? 'Deseleccionar' : 'Seleccionar'}
                   >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                      <circle cx="12" cy="10" r="3" />
-                    </svg>
                     {m}
-                    {selectedMunicipios.includes(m) && <span className="chip-check">✓</span>}
+                    {selectedMunicipios.includes(m) && <span className="chip-check"> v</span>}
                   </button>
                 ))}
               </div>
@@ -410,27 +323,20 @@ const DashboardPage: React.FC = () => {
 
           {selectedMunicipios.length > 0 && (
             <div className="municipios-footer">
-              <span>{selectedMunicipios.length} municipio(s) en {selectedDept} seleccionado(s) para análisis</span>
-              <button
-                className="btn-run-analysis"
-                onClick={() => navigate('/analysis')}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-                </svg>
-                Analizar selección
+              <span>{selectedMunicipios.length} municipio(s) en {selectedDept} seleccionado(s)</span>
+              <button className="btn-run-analysis" onClick={() => navigate('/analysis')}>
+                Analizar seleccion
               </button>
             </div>
           )}
         </div>
       </main>
 
-      {/* ── FAB: Upload ── */}
       <div className={`fab-upload-panel ${showUploadPanel ? 'open' : ''}`}>
         <div className="fab-panel-content">
           <div className="fab-panel-header">
             <span>Subir Archivo</span>
-            <button className="fab-panel-close" onClick={() => { setShowUploadPanel(false); setUploadStatus(null); }}>✕</button>
+            <button className="fab-panel-close" onClick={() => { setShowUploadPanel(false); setUploadStatus(null); }}>x</button>
           </div>
           <input
             type="file"
@@ -442,37 +348,31 @@ const DashboardPage: React.FC = () => {
             accept=".csv,.json,.xls,.xlsx"
           />
           <label htmlFor="file-upload-fab" className={`upload-box-fab ${isUploading ? 'disabled' : ''}`}>
-            <div className="upload-icon-fab">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="17 8 12 3 7 8" />
-                <line x1="12" y1="3" x2="12" y2="15" />
-              </svg>
-            </div>
             <span className="upload-text-fab">
               {isUploading ? 'Subiendo...' : 'Haz clic para cargar un archivo'}
             </span>
             <span className="upload-hint-fab">CSV, JSON, XLS</span>
           </label>
-
           {isUploading && (
             <div className="fab-progress">
-              <div className="fab-progress-info">
-                <span>Progreso</span><span>{uploadProgress}%</span>
-              </div>
+              <div className="fab-progress-info"><span>Progreso</span><span>{uploadProgress}%</span></div>
               <div className="fab-progress-bar">
                 <div className="fab-progress-fill" style={{ width: `${uploadProgress}%` }} />
               </div>
             </div>
           )}
-
+          {downloadError && (
+          <div style={{ marginTop: '1rem', padding: '1rem', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', borderRadius: '10px', color: '#ef4444' }}>
+            {downloadError}
+          </div>
+        )}
+        {downloadSuccess && (
+          <div style={{ marginTop: '1rem', padding: '1rem', background: 'rgba(74, 222, 128, 0.1)', border: '1px solid #4ade80', borderRadius: '10px', color: '#4ade80' }}>
+            {downloadSuccess}
+          </div>
+        )}
           {uploadStatus && (
             <div className={`fab-upload-msg ${uploadStatus.type}`}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                {uploadStatus.type === 'success'
-                  ? <polyline points="20 6 9 17 4 12" />
-                  : <><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></>}
-              </svg>
               {uploadStatus.message}
             </div>
           )}
@@ -485,19 +385,108 @@ const DashboardPage: React.FC = () => {
         onClick={() => { setShowUploadPanel(p => !p); setUploadStatus(null); }}
         title="Subir archivo"
       >
-        {showUploadPanel ? (
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        ) : (
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-            <polyline points="17 8 12 3 7 8" />
-            <line x1="12" y1="3" x2="12" y2="15" />
-          </svg>
-        )}
+        {showUploadPanel ? 'x' : '+'}
       </button>
+
+      {showReportsModal && (
+        <div className="rm-backdrop" onClick={() => setShowReportsModal(false)}>
+          <div className="rm-modal" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="rm-header">
+              <div className="rm-header-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                  <line x1="16" y1="13" x2="8" y2="13" />
+                  <line x1="16" y1="17" x2="8" y2="17" />
+                  <polyline points="10 9 9 9 8 9" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="rm-title">Descargar Último Análisis</h3>
+                <p className="rm-subtitle">Selecciona el formato de exportación</p>
+              </div>
+              <button className="rm-close" onClick={() => setShowReportsModal(false)} aria-label="Cerrar">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Description */}
+            <p className="rm-description">
+              Se exportará el último análisis ejecutado, incluyendo ranking de zonas, scores de competitividad, indicadores socioeconómicos y recomendaciones.
+            </p>
+
+            {/* Error / Success */}
+            {downloadError && (
+              <div className="rm-alert rm-alert-error">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                {downloadError}
+              </div>
+            )}
+            {downloadSuccess && (
+              <div className="rm-alert rm-alert-success">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                {downloadSuccess}
+              </div>
+            )}
+
+            {/* Format Buttons */}
+            <div className="rm-formats">
+              <button type="button" className="rm-format-btn rm-format-csv" onClick={() => handleDownloadReport('csv')}>
+                <div className="rm-format-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                  </svg>
+                </div>
+                <div className="rm-format-info">
+                  <span className="rm-format-name">CSV</span>
+                  <span className="rm-format-desc">Hoja de cálculo</span>
+                </div>
+                <svg className="rm-format-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              </button>
+
+              <button type="button" className="rm-format-btn rm-format-json" onClick={() => handleDownloadReport('json')}>
+                <div className="rm-format-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="16 18 22 12 16 6"/>
+                    <polyline points="8 6 2 12 8 18"/>
+                  </svg>
+                </div>
+                <div className="rm-format-info">
+                  <span className="rm-format-name">JSON</span>
+                  <span className="rm-format-desc">Datos estructurados</span>
+                </div>
+                <svg className="rm-format-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              </button>
+
+              <button type="button" className="rm-format-btn rm-format-xls" onClick={() => handleDownloadReport('xls')}>
+                <div className="rm-format-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/>
+                    <line x1="3" y1="9" x2="21" y2="9"/>
+                    <line x1="3" y1="15" x2="21" y2="15"/>
+                    <line x1="9" y1="3" x2="9" y2="21"/>
+                    <line x1="15" y1="3" x2="15" y2="21"/>
+                  </svg>
+                </div>
+                <div className="rm-format-info">
+                  <span className="rm-format-name">XLS</span>
+                  <span className="rm-format-desc">Excel compatible</span>
+                </div>
+                <svg className="rm-format-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              </button>
+            </div>
+
+            <button type="button" className="rm-cancel" onClick={() => setShowReportsModal(false)}>
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

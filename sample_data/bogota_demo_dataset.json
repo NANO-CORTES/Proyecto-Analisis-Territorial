@@ -1,0 +1,22 @@
+[
+  {"zone_code": "BOG-001", "zone_name": "Chapinero", "population_density": 18500, "average_income": 4200000, "education_level": 88, "economic_activity_index": 85, "commercial_presence_index": 92},
+  {"zone_code": "BOG-002", "zone_name": "Usaquen", "population_density": 16200, "average_income": 5100000, "education_level": 90, "economic_activity_index": 82, "commercial_presence_index": 88},
+  {"zone_code": "BOG-003", "zone_name": "Suba", "population_density": 22500, "average_income": 2400000, "education_level": 72, "economic_activity_index": 65, "commercial_presence_index": 70},
+  {"zone_code": "BOG-004", "zone_name": "Kennedy", "population_density": 25100, "average_income": 1800000, "education_level": 65, "economic_activity_index": 58, "commercial_presence_index": 68},
+  {"zone_code": "BOG-005", "zone_name": "Engativa", "population_density": 23000, "average_income": 2100000, "education_level": 70, "economic_activity_index": 62, "commercial_presence_index": 65},
+  {"zone_code": "BOG-006", "zone_name": "Bosa", "population_density": 24800, "average_income": 1500000, "education_level": 58, "economic_activity_index": 48, "commercial_presence_index": 52},
+  {"zone_code": "BOG-007", "zone_name": "Fontibon", "population_density": 17500, "average_income": 3100000, "education_level": 78, "economic_activity_index": 75, "commercial_presence_index": 80},
+  {"zone_code": "BOG-008", "zone_name": "Puente Aranda", "population_density": 19000, "average_income": 2700000, "education_level": 74, "economic_activity_index": 78, "commercial_presence_index": 82},
+  {"zone_code": "BOG-009", "zone_name": "Barrios Unidos", "population_density": 17800, "average_income": 2900000, "education_level": 76, "economic_activity_index": 70, "commercial_presence_index": 75},
+  {"zone_code": "BOG-010", "zone_name": "Teusaquillo", "population_density": 13500, "average_income": 3800000, "education_level": 85, "economic_activity_index": 72, "commercial_presence_index": 78},
+  {"zone_code": "BOG-011", "zone_name": "Bosa Occidental", "population_density": 26200, "average_income": 1300000, "education_level": 52, "economic_activity_index": 42, "commercial_presence_index": 45},
+  {"zone_code": "BOG-012", "zone_name": "Ciudad Bolivar", "population_density": 27500, "average_income": 1100000, "education_level": 48, "economic_activity_index": 38, "commercial_presence_index": 40},
+  {"zone_code": "BOG-013", "zone_name": "San Cristobal", "population_density": 21000, "average_income": 1700000, "education_level": 60, "economic_activity_index": 50, "commercial_presence_index": 55},
+  {"zone_code": "BOG-014", "zone_name": "Antonio Narino", "population_density": 16500, "average_income": 2300000, "education_level": 68, "economic_activity_index": 64, "commercial_presence_index": 72},
+  {"zone_code": "BOG-015", "zone_name": "Tunjuelito", "population_density": 22000, "average_income": 1600000, "education_level": 62, "economic_activity_index": 52, "commercial_presence_index": 58},
+  {"zone_code": "BOG-016", "zone_name": "La Candelaria", "population_density": 12000, "average_income": 3200000, "education_level": 82, "economic_activity_index": 70, "commercial_presence_index": 75},
+  {"zone_code": "BOG-017", "zone_name": "Los Martires", "population_density": 14500, "average_income": 2500000, "education_level": 71, "economic_activity_index": 68, "commercial_presence_index": 73},
+  {"zone_code": "BOG-018", "zone_name": "Santa Fe", "population_density": 15800, "average_income": 2200000, "education_level": 66, "economic_activity_index": 60, "commercial_presence_index": 65},
+  {"zone_code": "BOG-019", "zone_name": "Rafael Uribe", "population_density": 23500, "average_income": 1450000, "education_level": 55, "economic_activity_index": 45, "commercial_presence_index": 48},
+  {"zone_code": "BOG-020", "zone_name": "Usme", "population_density": 26800, "average_income": 1200000, "education_level": 50, "economic_activity_index": 40, "commercial_presence_index": 42}
+]
