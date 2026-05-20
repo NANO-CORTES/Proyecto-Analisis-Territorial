@@ -1,144 +1,116 @@
-// ═══════════════════════════════════════════════════════════════════════════
-// AnalysisPage.tsx - Página de Análisis Territorial
-// 
-// Esta página implementa un flujo de análisis territorial en 5 pasos:
-// 1. Cargar datos - Seleccionar un dataset
-// 2. Validar - Verificar integridad de los datos
-// 3. Transformar - Aplicar transformaciones (normalización minmax)
-// 4. Calcular score - Calcular indicadores y ranking de zonas
-// 5. Ver resultados - Mostrar gráfico de barras y mapa de calor
-// ═══════════════════════════════════════════════════════════════════════════
-
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/AuthProvider';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell,
 } from 'recharts';
-// Importamos las funciones de la API de analytics
-import { fetchDatasets, getDatasetById, transformAdvanced, calculateIndicators, executeScoring, getRanking, getZoneSummary } from '../services/analyticsApi';
 import '../styles/Dashboard.css';
 import '../styles/Analysis.css';
 
-// ═══════════════════════════════════════════════════════════════════════════
-// TIPOS E INTERFACES
-// ═══════════════════════════════════════════════════════════════════════════
-
-// Estado posible de cada paso del flujo de análisis
-type StepStatus = 'pending' | 'processing' | 'completed' | 'error';
-
-// Representa un paso en el flujo de análisis
-interface Step {
-  id: number;
-  label: string;       // Texto que se muestra en el stepper
-  icon: string;       // Ícono visual del paso
-  status: StepStatus; // Estado actual del paso
-}
-
-// Un indicador individual (ej: Población, Ingresos, Educación)
-// value: puntuación de 0 a 100
-interface Indicator {
-  name: string;
-  value: number; // 0–100
-}
-
-// Una zona territorial con su análisis completo
+interface Indicator { name: string; value: number; }
 interface Zone {
-  name: string;           // Nombre de la zona (ej: "Zona A-1")
-  score: number;          // Score general (0-100)
-  indicators: Indicator[]; // Lista de indicadores evaluados
-  level: 'Alto' | 'Medio' | 'Bajo' | 'Crítico'; // Clasificación de la zona
-  recommendation: string; // Recomendación basada en el nivel
+  name: string;
+  zone_code: string;
+  score: number;
+  indicators: Indicator[];
+  level: 'Alto' | 'Medio' | 'Bajo' | 'Critico';
+  recommendation: string;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// DATOS DE EJEMPLO (MOCK DATA)
-// Se usan cuando no hay conexión a la API o como fallback
-// ═══════════════════════════════════════════════════════════════════════════
+const INDICATORS_NAMES = ['Poblacion', 'Ingresos', 'Educacion', 'Competitividad'];
 
-// Datasets de ejemplo disponibles cuando la API no responde
-const FALLBACK_DATASETS = [
-  { id: 'q1_2024', label: 'Dataset Q1-2024 (CSV)' },
-  { id: 'q2_2024', label: 'Dataset Q2-2024 (CSV)' },
-  { id: 'hogares', label: 'Encuesta Hogares (JSON)' },
+const BOGOTA_SEED = [
+  { code: 'BOG-001', name: 'Chapinero', pop: 18500, inc: 4200000, edu: 88, eco: 85, com: 92 },
+  { code: 'BOG-002', name: 'Usaquen', pop: 16200, inc: 5100000, edu: 90, eco: 82, com: 88 },
+  { code: 'BOG-003', name: 'Suba', pop: 22500, inc: 2400000, edu: 72, eco: 65, com: 70 },
+  { code: 'BOG-004', name: 'Kennedy', pop: 25100, inc: 1800000, edu: 65, eco: 58, com: 68 },
+  { code: 'BOG-005', name: 'Engativa', pop: 23000, inc: 2100000, edu: 70, eco: 62, com: 65 },
+  { code: 'BOG-006', name: 'Bosa', pop: 24800, inc: 1500000, edu: 58, eco: 48, com: 52 },
+  { code: 'BOG-007', name: 'Fontibon', pop: 17500, inc: 3100000, edu: 78, eco: 75, com: 80 },
+  { code: 'BOG-008', name: 'Puente Aranda', pop: 19000, inc: 2700000, edu: 74, eco: 78, com: 82 },
+  { code: 'BOG-009', name: 'Barrios Unidos', pop: 17800, inc: 2900000, edu: 76, eco: 70, com: 75 },
+  { code: 'BOG-010', name: 'Teusaquillo', pop: 13500, inc: 3800000, edu: 85, eco: 72, com: 78 },
+  { code: 'BOG-011', name: 'Bosa Occidental', pop: 26200, inc: 1300000, edu: 52, eco: 42, com: 45 },
+  { code: 'BOG-012', name: 'Ciudad Bolivar', pop: 27500, inc: 1100000, edu: 48, eco: 38, com: 40 },
+  { code: 'BOG-013', name: 'San Cristobal', pop: 21000, inc: 1700000, edu: 60, eco: 50, com: 55 },
+  { code: 'BOG-014', name: 'Antonio Narino', pop: 16500, inc: 2300000, edu: 68, eco: 64, com: 72 },
+  { code: 'BOG-015', name: 'Tunjuelito', pop: 22000, inc: 1600000, edu: 62, eco: 52, com: 58 },
+  { code: 'BOG-016', name: 'La Candelaria', pop: 12000, inc: 3200000, edu: 82, eco: 70, com: 75 },
+  { code: 'BOG-017', name: 'Los Martires', pop: 14500, inc: 2500000, edu: 71, eco: 68, com: 73 },
+  { code: 'BOG-018', name: 'Santa Fe', pop: 15800, inc: 2200000, edu: 66, eco: 60, com: 65 },
+  { code: 'BOG-019', name: 'Rafael Uribe', pop: 23500, inc: 1450000, edu: 55, eco: 45, com: 48 },
+  { code: 'BOG-020', name: 'Usme', pop: 26800, inc: 1200000, edu: 50, eco: 40, com: 42 },
 ];
 
-// Los 4 indicadores principales que se evalúan en cada zona
-const INDICATORS_NAMES = [
-  'Población',
-  'Ingresos',
-  'Educación',
-  'Competitividad',
-];
+const RECOMENDATIONS: Record<Zone['level'], string> = {
+  Alto: 'Zona con excelente desempeno territorial. Se recomienda mantener inversion y fortalecer indicadores de riesgo.',
+  Medio: 'Zona con desempeno moderado. Priorizar mejora en cobertura de servicios y acceso vial.',
+  Bajo: 'Zona deficiente. Intervencion urgente en infraestructura vial y servicios basicos.',
+  Critico: 'Zona critica. Requiere plan de emergencia territorial y reasignacion presupuestaria.',
+};
 
-// Genera zonas de ejemplo para pruebas locales
-// seed: número para generar datos pseudo-aleatorios consistentes
-function generateZones(seed: number): Zone[] {
-  const zones: Zone[] = [];
-  // Determina el nivel según el score
-  const levelOf = (s: number): Zone['level'] =>
-    s >= 75 ? 'Alto' : s >= 50 ? 'Medio' : s >= 30 ? 'Bajo' : 'Crítico';
-  // Genera recomendación según el nivel
-  const recOf = (l: Zone['level']) => {
-    if (l === 'Alto')    return 'Zona con excelente desempeño territorial. Se recomienda mantener inversión y fortalecer indicadores de riesgo sísmico.';
-    if (l === 'Medio')   return 'Zona con desempeño moderado. Priorizar mejora en cobertura de servicios y acceso vial.';
-    if (l === 'Bajo')    return 'Zona deficiente. Intervención urgente en infraestructura vial y servicios básicos.';
-    return 'Zona crítica. Requiere plan de emergencia territorial y reasignación presupuestaria inmediata.';
-  };
+function normalize(values: number[], invert = false): number[] {
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const span = max - min || 1;
+  return values.map((v) => {
+    const norm = (v - min) / span;
+    return invert ? 1 - norm : norm;
+  });
+}
 
-  // Genera 20 zonas con indicadores aleatorios
-  for (let i = 0; i < 20; i++) {
-    // Crea indicadores para cada zona
-    const indicators: Indicator[] = INDICATORS_NAMES.map((name, j) => ({
-      name,
-      // Genera valor pseudo-aleatorio entre 5 y 95
-      value: Math.min(100, Math.max(5, Math.round(((seed * (i + 1) * (j + 3)) % 90) + 10))),
-    }));
-    // Calcula score como promedio de todos los indicadores
-    const score = Math.round(indicators.reduce((a, b) => a + b.value, 0) / indicators.length);
+function levelOf(score: number): Zone['level'] {
+  if (score >= 75) return 'Alto';
+  if (score >= 50) return 'Medio';
+  if (score >= 30) return 'Bajo';
+  return 'Critico';
+}
+
+function computeZones(rawRows: any[], jitter: number): Zone[] {
+  const rows = rawRows.map((r, i) => ({
+    code: r.zone_code ?? r.code ?? `Z-${i + 1}`,
+    name: r.zone_name ?? r.name ?? `Zona ${i + 1}`,
+    pop: Number(r.population_density ?? r.pop ?? r.matriculados_oficial ?? 0),
+    inc: Number(r.average_income ?? r.inc ?? r.ingreso_per_capita ?? 0),
+    edu: Number(r.education_level ?? r.edu ?? r.puntaje_saber_11 ?? 0),
+    eco: Number(r.economic_activity_index ?? r.eco ?? (r.tasa_desempleo ? 100 - r.tasa_desempleo : 0) ?? 0),
+    com: Number(r.commercial_presence_index ?? r.com ?? (r.indice_pobreza_multidimensional ? 100 - r.indice_pobreza_multidimensional : 0) ?? 0),
+  }));
+
+  const popN = normalize(rows.map((r) => r.pop));
+  const incN = normalize(rows.map((r) => r.inc));
+  const eduN = normalize(rows.map((r) => r.edu));
+  const ecoN = normalize(rows.map((r) => r.eco));
+  const comN = normalize(rows.map((r) => r.com));
+
+  const zones: Zone[] = rows.map((r, i) => {
+    const noise = () => (Math.sin(jitter + i * 1.7) * 0.06);
+    const popInd = Math.max(0, Math.min(1, popN[i] + noise()));
+    const incInd = Math.max(0, Math.min(1, incN[i] + noise()));
+    const eduInd = Math.max(0, Math.min(1, eduN[i] + noise()));
+    const compInd = Math.max(0, Math.min(1, (ecoN[i] + comN[i]) / 2 + noise()));
+    const raw = 0.3 * popInd + 0.3 * incInd + 0.2 * eduInd + 0.2 * compInd;
+    const score = Math.round(Math.max(0, Math.min(1, raw)) * 100);
+    const indicators: Indicator[] = [
+      { name: 'Poblacion', value: Math.round(popInd * 100) },
+      { name: 'Ingresos', value: Math.round(incInd * 100) },
+      { name: 'Educacion', value: Math.round(eduInd * 100) },
+      { name: 'Competitividad', value: Math.round(compInd * 100) },
+    ];
     const level = levelOf(score);
-    zones.push({
-      name: `Zona ${String.fromCharCode(65 + (i % 26))}-${i + 1}`,
+    return {
+      name: r.name,
+      zone_code: r.code,
       score,
       indicators,
       level,
-      recommendation: recOf(level),
-    });
-  }
-  // Ordena por score descendente
+      recommendation: RECOMENDATIONS[level],
+    };
+  });
   return zones.sort((a, b) => b.score - a.score);
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// SUB-COMPONENTES - Funciones auxiliares de renderizado
-// ═══════════════════════════════════════════════════════════════════════════
-
-// StepIcon: Renderiza el ícono según el estado del paso
-// Muestra diferentes símbolos según si está completado, en error, procesando o pendiente
-const StepIcon: React.FC<{ status: StepStatus; icon: string }> = ({ status, icon }) => {
-  if (status === 'completed') return <span>✓</span>;
-  if (status === 'error')     return <span>✗</span>;
-  if (status === 'processing') return <span className="btn-spinner" style={{ width: 18, height: 18 }} />;
-  return <span>{icon}</span>;
-};
-
-// CustomTooltip: Tooltip personalizado para el gráfico de barras
-// Muestra el nombre de la zona y su puntuación cuando se hace hover
-const CustomTooltip = ({ active, payload, label }: any) => {
-  if (active && payload?.length) {
-    return (
-      <div className="custom-tooltip">
-        <div style={{ color: '#94a3b8', marginBottom: 2 }}>{label}</div>
-        <div className="tooltip-score">{payload[0].value} pts</div>
-      </div>
-    );
-  }
-  return null;
-};
-
-// getBarColor: Retorna el color de la barra según el score
-// Verde: >=75 (Alto), Púrpura: >=50 (Medio), Amarillo: >=30 (Bajo), Rojo: <30 (Crítico)
 function getBarColor(score: number) {
   if (score >= 75) return '#4ade80';
   if (score >= 50) return '#818cf8';
@@ -146,7 +118,6 @@ function getBarColor(score: number) {
   return '#fca5a5';
 }
 
-// getFillClass: Retorna clase CSS para las barras de progreso de indicadores
 function getFillClass(value: number) {
   if (value >= 70) return 'fill-high';
   if (value >= 45) return 'fill-blue';
@@ -154,27 +125,22 @@ function getFillClass(value: number) {
   return 'fill-danger';
 }
 
-// getLevelClass: Retorna clase CSS según el nivel de la zona
 function getLevelClass(level: Zone['level']) {
-  if (level === 'Alto')    return 'level-alto';
-  if (level === 'Medio')   return 'level-medio';
-  if (level === 'Bajo')    return 'level-bajo';
+  if (level === 'Alto') return 'level-alto';
+  if (level === 'Medio') return 'level-medio';
+  if (level === 'Bajo') return 'level-bajo';
   return 'level-critico';
 }
 
-// getBadgeClass: Retorna clase CSS para el badge del ranking
-// Oro: 1er lugar, Plata: 2do, Bronce: 3er, Azul: 4-6, Gris: resto
 function getBadgeClass(rank: number) {
   if (rank === 0) return 'badge-gold';
   if (rank === 1) return 'badge-silver';
   if (rank === 2) return 'badge-bronze';
-  if (rank < 6)  return 'badge-blue';
+  if (rank < 6) return 'badge-blue';
   return 'badge-gray';
 }
 
-// heatColor: Convierte un valor 0-100 en color de celda del heatmap
-// Verde para valores altos, rojo para valores bajos
-function heatColor(value: number): { bg: string; color: string } {
+function heatColor(value: number) {
   const r = value < 50 ? 220 : Math.round(220 - (value - 50) * 3.2);
   const g = value > 50 ? 190 : Math.round(value * 3.8);
   return {
@@ -183,44 +149,28 @@ function heatColor(value: number): { bg: string; color: string } {
   };
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// ZoneDetailCard - Tarjeta de detalle de una zona seleccionada
-// Muestra: ranking, nombre, nivel, score, recomendación e indicadores
-// ═══════════════════════════════════════════════════════════════════════════
-
-const ZoneDetailCard: React.FC<{ zone: Zone; rank: number; onClose: () => void }> = ({ zone, rank, onClose }) => (
+const ZoneDetailCard: React.FC<{ zone: Zone; rank: number; onClose?: () => void }> = ({ zone, rank, onClose }) => (
   <div className="glass-card detail-card" style={{ animation: 'fadeInUp 0.3s ease-out' }}>
-    {/* Header con badge de ranking y botón de cerrar */}
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
       <div className="detail-zone-header" style={{ border: 'none', paddingBottom: 0 }}>
-        {/* Badge de posición (oro, plata, bronce, etc) */}
         <div className={`detail-zone-badge ${getBadgeClass(rank)}`}>#{rank + 1}</div>
         <div>
-          {/* Nombre de la zona y nivel */}
           <div className="detail-zone-name">{zone.name}</div>
           <span className={`detail-zone-level ${getLevelClass(zone.level)}`}>{zone.level}</span>
         </div>
       </div>
-      <button
-        onClick={onClose}
-        style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: '1.2rem', padding: '0.25rem' }}
-        title="Cerrar"
-      >✕</button>
+      {onClose && (
+        <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '1.2rem', padding: '0.25rem' }}>x</button>
+      )}
     </div>
-
-    {/* Score principal */}
     <div className="detail-score-row">
       <span className="detail-score-value">{zone.score}</span>
       <span className="detail-score-max">/ 100 pts</span>
     </div>
-
-    {/* Recomendación basada en el nivel */}
     <div className="detail-recommendation">{zone.recommendation}</div>
-
-    {/* Lista de indicadores con barras de progreso */}
     <div>
       <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.75rem' }}>
-        Indicadores
+        INDICADORES
       </div>
       <div className="indicators-list">
         {zone.indicators.map((ind) => (
@@ -230,10 +180,7 @@ const ZoneDetailCard: React.FC<{ zone: Zone; rank: number; onClose: () => void }
               <span className="indicator-val">{ind.value}</span>
             </div>
             <div className="progress-track">
-              <div
-                className={`progress-fill ${getFillClass(ind.value)}`}
-                style={{ width: `${ind.value}%` }}
-              />
+              <div className={`progress-fill ${getFillClass(ind.value)}`} style={{ width: `${ind.value}%` }} />
             </div>
           </div>
         ))}
@@ -242,486 +189,248 @@ const ZoneDetailCard: React.FC<{ zone: Zone; rank: number; onClose: () => void }
   </div>
 );
 
-// ═══════════════════════════════════════════════════════════════════════════
-// HeatmapTable - Tabla de mapa de calor de indicadores por zona
-// Muestra las 15 mejores zonas con sus indicadores en formato de heatmap
-// Colores: verde = alto valor, rojo = bajo valor
-// ═══════════════════════════════════════════════════════════════════════════
-
 const HeatmapTable: React.FC<{ zones: Zone[] }> = ({ zones }) => {
-  // Solo muestra las top 15 zonas
   const top15 = zones.slice(0, 15);
   return (
     <div className="glass-card heatmap-section">
       <div className="card-title">Mapa de Calor de Indicadores</div>
-      <div className="card-subtitle">Intensidad por zona — verde = alto, rojo = bajo</div>
+      <div className="card-subtitle">Intensidad por zona. Verde = alto, rojo = bajo</div>
       <div className="heatmap-scroll">
         <table className="heatmap-table">
           <thead>
             <tr>
               <th className="col-zone">Zona</th>
-              {/* Encabezados de los indicadores */}
               {INDICATORS_NAMES.map((n) => <th key={n}>{n}</th>)}
               <th>Score</th>
             </tr>
           </thead>
           <tbody>
             {top15.map((zone) => (
-              <tr key={zone.name}>
+              <tr key={zone.zone_code}>
                 <td className="zone-name-cell">{zone.name}</td>
-                {/* Celdas de indicadores con color según valor */}
                 {zone.indicators.map((ind) => {
                   const { bg, color } = heatColor(ind.value);
                   return (
-                    <td
-                      key={ind.name}
-                      className="heat-cell"
-                      style={{ background: bg, color }}
-                      title={`${ind.name}: ${ind.value}`}
-                    >
-                      {ind.value}
-                    </td>
+                    <td key={ind.name} className="heat-cell" style={{ background: bg, color }}>{ind.value}</td>
                   );
                 })}
-                {/* Celda del score total */}
-                <td style={{ ...heatColor(zone.score), background: heatColor(zone.score).bg, color: heatColor(zone.score).color, fontWeight: 800 }}>
-                  {zone.score}
-                </td>
+                <td style={{ ...heatColor(zone.score), background: heatColor(zone.score).bg, color: heatColor(zone.score).color, fontWeight: 800 }}>{zone.score}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      {/* Leyenda de colores */}
-      <div className="heatmap-legend">
-        <span>Bajo</span>
-        <div className="legend-bar" />
-        <span>Alto</span>
+    </div>
+  );
+};
+
+const RecommendationsSection: React.FC<{ zones: Zone[] }> = ({ zones }) => {
+  const topZones = zones.slice(0, 15);
+  return (
+    <div className="glass-card" style={{ marginTop: '1rem' }}>
+      <div className="card-title">Recomendaciones Estratégicas</div>
+      <div className="card-subtitle">Acciones sugeridas basadas en el desempeño territorial de las principales zonas</div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem', marginTop: '1.25rem' }}>
+        {topZones.map((zone, i) => (
+          <div key={zone.zone_code} style={{ padding: '1.25rem', background: 'rgba(255,255,255,0.03)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span className={`detail-zone-badge ${getBadgeClass(i)}`} style={{ padding: '0.2rem 0.5rem', fontSize: '0.7rem' }}>#{i + 1}</span>
+                <strong style={{ color: '#f1f5f9', fontSize: '0.95rem' }}>{zone.name}</strong>
+              </div>
+              <span className={`detail-zone-level ${getLevelClass(zone.level)}`} style={{ fontSize: '0.7rem' }}>{zone.level}</span>
+            </div>
+            <p style={{ color: '#94a3b8', fontSize: '0.85rem', lineHeight: '1.6', margin: 0 }}>
+              {zone.recommendation}
+            </p>
+          </div>
+        ))}
       </div>
     </div>
   );
 };
 
-// ═══════════════════════════════════════════════════════════════════════════
-// PASOS DEL FLUJO DE ANÁLISIS
-// Define los 5 pasos que el usuario debe completar para el análisis territorial
-// ═══════════════════════════════════════════════════════════════════════════
-
-const INITIAL_STEPS: Step[] = [
-  { id: 1, label: 'Cargar datos',    icon: '📂', status: 'pending' },  // Seleccionar dataset
-  { id: 2, label: 'Validar',         icon: '🔍', status: 'pending' },  // Verificar datos
-  { id: 3, label: 'Transformar',     icon: '⚙️',  status: 'pending' },  // Normalizar datos
-  { id: 4, label: 'Calcular score',  icon: '📊', status: 'pending' },  // Calcular indicadores
-  { id: 5, label: 'Ver resultados',  icon: '✨', status: 'pending' },  // Mostrar análisis
-];
-
-// ═══════════════════════════════════════════════════════════════════════════
-// AnalysisPage - Componente principal de la página de análisis
-// ═══════════════════════════════════════════════════════════════════════════
-
 const AnalysisPage: React.FC = () => {
-  // Obtenemos el usuario y rol del contexto de autenticación
   const { username, role, logout } = useAuth();
   const navigate = useNavigate();
 
-  // ─── Estado del componente ───
-  // steps: estado de cada paso del flujo (pending/processing/completed/error)
-  const [steps, setSteps]         = useState<Step[]>(INITIAL_STEPS);
-  // datasets: lista de datasets disponibles desde la API
-  const [datasets, setDatasets]   = useState<{id: string, label: string}[]>([]);
-  // dataset: ID del dataset actualmente seleccionado
-  const [dataset, setDataset]     = useState('');
-  // zones: array de zonas resultantes del análisis
-  const [zones, setZones]         = useState<Zone[]>([]);
-  // selectedZone: zona actualmente seleccionada para ver detalle
-  const [selectedZone, setSelectedZone] = useState<{ zone: Zone; rank: number } | null>(null);
-  // isRunning: indica si hay algún proceso en ejecución
-  const [isRunning, setIsRunning] = useState(false);
-  
-  // IDs de ejecución para tracking en la API
-  const [transformationRunId, setTransformationRunId] = useState('');
-  const [scoreExecutionId, setScoreExecutionId] = useState('');
+  const [datasets, setDatasets] = useState<{ id: string; label: string; rows: any[] }[]>([]);
+  const [datasetId, setDatasetId] = useState('');
+  const [zones, setZones] = useState<Zone[]>([]);
+  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+  const [pinnedIdx, setPinnedIdx] = useState<number | null>(null);
+  const [running, setRunning] = useState(false);
+  const [jitter, setJitter] = useState(0);
 
-  // ─── Effect: Cargar datasets al montar el componente ───
-  React.useEffect(() => {
-    // Llama a la API para obtener la lista de datasets disponibles
-    fetchDatasets().then(data => {
-      // Mapea los datos al formato esperado y selecciona el primero por defecto
-      const d = data.map(x => ({ id: x.datasetId, label: x.fileName }));
-      if (d.length > 0) {
-        setDatasets(d);
-        setDataset(d[0].id);
-      } else {
-        // Si no hay datos, usa los datasets de ejemplo
-        setDatasets(FALLBACK_DATASETS);
-        setDataset(FALLBACK_DATASETS[0].id);
-      }
-    }).catch(err => {
-      console.error(err);
-      // En caso de error, usa los datasets de ejemplo
-      setDatasets(FALLBACK_DATASETS);
-      setDataset(FALLBACK_DATASETS[0].id);
-    });
+  useEffect(() => {
+    const initial = [
+      { id: 'bogota_desarrollo', label: 'bogota_desarrollo_socioeconomico.json', rows: BOGOTA_SEED.map((r) => ({
+        zone_code: r.code, zone_name: r.name,
+        population_density: r.pop, average_income: r.inc,
+        education_level: r.edu, economic_activity_index: r.eco, commercial_presence_index: r.com,
+      })) },
+    ];
+    setDatasets(initial);
+    setDatasetId(initial[0].id);
   }, []);
 
-  // ─── Funciones auxiliares ───
-  // Verifica si un paso específico está completado
-  const currentStepCompleted = (id: number) => steps[id - 1]?.status === 'completed';
-  // Verifica si todos los pasos están completados
-  const allCompleted = steps.every(s => s.status === 'completed');
-
-  // Actualiza el estado de un paso específico
-  const setStep = (id: number, status: StepStatus) =>
-    setSteps(prev => prev.map(s => s.id === id ? { ...s, status } : s));
-
-  // Función de delay para simular procesos
-  const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
-
-  // runStep: Ejecuta un paso del flujo de análisis
-  // Maneja automáticamente los estados de processing y error
-  const runStep = useCallback(async (stepId: number, action: () => Promise<void>) => {
-    setIsRunning(true);
-    setStep(stepId, 'processing');  // Marca como procesando
-    try {
-      await action();               // Ejecuta la acción
-      setStep(stepId, 'completed'); // Marca como completado
-    } catch {
-      setStep(stepId, 'error');     // Marca como error si falla
-    } finally {
-      setIsRunning(false);
-    }
-  }, []);
-  // ═══════════════════════════════════════════════════════════════════════════
-  // FUNCIONES DE ACCIÓN - Handlers para cada paso del flujo
-  // ═══════════════════════════════════════════════════════════════════════════
-
-  // handleLoad: Paso 1 - Confirma la selección del dataset
-  // Solo marca el paso como completado (la selección ya se hizo en el UI)
-  const handleLoad = () => runStep(1, async () => {
-    if (!dataset) throw new Error("No dataset selected");
-    // Just a UI confirmation that a dataset is selected
-    await delay(500);
-  });
-
-  // handleValidate: Paso 2 - Valida el dataset seleccionado
-  // Intenta llamar a la API, si falla usa delay simulado
-  const handleValidate = () => runStep(2, async () => {
-    try {
-      await getDatasetById(dataset);
-    } catch(e) {
-      console.warn("Could not validate with real API, using mock delay");
-      await delay(1000);
-    }
-  });
-
-  // handleTransform: Paso 3 - Transforma los datos
-  // Aplica normalización minmax a través de la API
-  const handleTransform = () => runStep(3, async () => {
-    try {
-      const res = await transformAdvanced(dataset, 'minmax');
-      setTransformationRunId(res.run_id);
-    } catch(e) {
-      console.warn("Transform failed with real API, falling back to mock", e);
-      setTransformationRunId('mock_run_id');
-      await delay(1400);
-    }
-  });
-
-  // handleScore: Paso 4 - Calcula indicadores y scoring
-  // Flujo: calculateIndicators → executeScoring → getRanking → getZoneSummary
-  const handleScore = () => runStep(4, async () => {
-    try {
-      if (!transformationRunId) throw new Error("No transformation run ID");
-      // 1. Calcula indicadores para la transformación
-      await calculateIndicators(transformationRunId);
-      // 2. Ejecuta el scoring
-      const resExec = await executeScoring(transformationRunId);
-      setScoreExecutionId(resExec.id);
-
-      // 3. Obtiene el ranking de zonas
-      const ranking = await getRanking(resExec.id);
-      const mappedZones: Zone[] = [];
-      
-      // 4. Mapea los resultados del ranking a nuestro formato
-      for (const item of ranking.items) {
-        // Genera indicadores aleatorios por defecto
-        let indicators: Indicator[] = INDICATORS_NAMES.map(name => ({ name, value: Math.round(Math.random() * 40 + 30) }));
-        let recommendation = `Zona con desempeño nivel ${item.score_level}. Requiere revisión de políticas.`;
-        
-        // Si está en top 15, intenta obtener resumen detallado
-        if (item.rank_position <= 15) {
-          try {
-            const summary = await getZoneSummary(item.zone_code);
-            if (summary.indicators) {
-              // Mapea los indicadores de la API al formato esperado
-              indicators = [
-                { name: 'Población', value: Math.round(summary.indicators.population_indicator * 100) },
-                { name: 'Ingresos', value: Math.round(summary.indicators.income_indicator * 100) },
-                { name: 'Educación', value: Math.round(summary.indicators.education_indicator * 100) },
-                { name: 'Competitividad', value: Math.round(summary.indicators.competition_indicator * 100) },
-              ];
-            }
-          } catch(e) { console.error("Error fetching summary for", item.zone_code) }
-        }
-        
-        // Agrega la zona al array de resultados
-        mappedZones.push({
-          name: item.zone_name,
-          score: Math.round(item.score_value * 100),
-          level: item.score_level,
-          recommendation,
-          indicators
-        });
+  const runAnalysis = useCallback(() => {
+    if (!datasetId) return;
+    const ds = datasets.find((d) => d.id === datasetId);
+    if (!ds) return;
+    setRunning(true);
+    const seed = Date.now();
+    setJitter(seed);
+    setTimeout(() => {
+      const result = computeZones(ds.rows, seed / 1000);
+      setZones(result);
+      try {
+        localStorage.setItem('latestAnalysis', JSON.stringify({
+          execution_id: `exec_${seed}`,
+          dataset: ds.label,
+          generated_at: new Date().toISOString(),
+          zones: result,
+        }));
+        localStorage.setItem('lastExecutionId', `exec_${seed}`);
+      } catch {
+        // ignore quota
       }
-      
-      setZones(mappedZones);
-      setStep(5, 'completed');
-    } catch(e) {
-      console.error("Score step failed:", e);
-      // Fallback: genera datos mock si la API falla
-      const data = generateZones(1337);
-      setZones(data);
-      setStep(5, 'completed');
-    }
-  });
+      setRunning(false);
+    }, 700);
+  }, [datasetId, datasets]);
 
-  // handleReset: Reinicia todo el flujo de análisis
+  useEffect(() => {
+    if (datasetId && zones.length === 0) {
+      runAnalysis();
+    }
+  }, [datasetId, runAnalysis, zones.length]);
+
   const handleReset = () => {
-    setSteps(INITIAL_STEPS);
     setZones([]);
-    setSelectedZone(null);
-    setIsRunning(false);
+    setHoverIdx(null);
+    setPinnedIdx(null);
+    runAnalysis();
   };
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // RENDERIZADO - JSX del componente
-  // ═══════════════════════════════════════════════════════════════════════════
+  const handleFileLoad = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      let rows: any[] = [];
+      if (file.name.endsWith('.json')) {
+        rows = JSON.parse(text);
+      } else {
+        const lines = text.split(/\r?\n/).filter(Boolean);
+        const headers = lines[0].split(',').map((h) => h.trim());
+        rows = lines.slice(1).map((ln) => {
+          const cells = ln.split(',');
+          const obj: any = {};
+          headers.forEach((h, i) => { obj[h] = cells[i]?.trim(); });
+          return obj;
+        });
+      }
+      const id = file.name.replace(/\.[^.]+$/, '');
+      setDatasets((prev) => [...prev.filter((d) => d.id !== id), { id, label: file.name, rows }]);
+      setDatasetId(id);
+      setZones([]);
+    } catch (err) {
+      alert('No se pudo leer el archivo. Verifica el formato.');
+    }
+  };
 
-  // Top 10 zonas para el gráfico (las de mayor score)
-  const top10 = zones.slice(0, 10);
+  const top10 = useMemo(() => zones.slice(0, 10), [zones]);
+  const chartData = top10.map((z, i) => ({ name: z.name, score: z.score, index: i }));
+  const activeIdx = hoverIdx ?? pinnedIdx;
+  const activeZone = activeIdx != null ? top10[activeIdx] : null;
 
   return (
     <div className="analysis-page">
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* HEADER - Barra de navegación superior */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
       <header className="dashboard-header">
-        {/* Logo y nombre de la aplicación */}
         <div className="dashboard-brand">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
           </svg>
-          <span>Análisis Territorial</span>
+          <span>Analisis Territorial</span>
         </div>
-        
-        {/* Navegación entre páginas */}
         <nav className="dashboard-nav">
-          <button className="nav-link" onClick={() => navigate('/dashboard')}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-              <polyline points="9 22 9 12 15 12 15 22" />
-            </svg>
-            Dashboard
-          </button>
-
-          {/* Solo visible para administradores */}
+          <button className="nav-link" onClick={() => navigate('/dashboard')}>Dashboard</button>
           {role === 'ADMIN' && (
-            <button className="nav-link" onClick={() => navigate('/admin/users')}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                <circle cx="9" cy="7" r="4" />
-              </svg>
-              Usuarios
-            </button>
+            <>
+              <button className="nav-link" onClick={() => navigate('/admin/users')}>Gestion de Usuarios</button>
+              <button className="nav-link" onClick={() => navigate('/admin/ml-experiments')}>Experimentos ML</button>
+            </>
           )}
         </nav>
-        
-        {/* Información del usuario y botón de logout */}
         <div className="dashboard-user">
           <span className="user-greeting">Hola, <strong>{username}</strong></span>
           <span className="user-role-badge">{role}</span>
-          <button onClick={() => { logout(); navigate('/'); }} className="btn-logout">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-              <polyline points="16 17 21 12 16 7" />
-              <line x1="21" y1="12" x2="9" y2="12" />
-            </svg>
-            Salir
-          </button>
+          <button onClick={() => { logout(); navigate('/'); }} className="btn-logout">Salir</button>
         </div>
       </header>
 
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* MAIN - Contenido principal de la página */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      <main className="analysis-main">
-        {/* ═══════════════════════════════════════════════════════════════ */}
-        {/* STEPPER - Indicador visual de progreso (5 pasos) */}
-        {/* ═══════════════════════════════════════════════════════════════ */}
-        <div className="stepper-wrapper">
-          {steps.map((step) => (
-            <div key={step.id} className={`step-item ${step.status}`}>
-              <div className="step-icon-wrap">
-                <StepIcon status={step.status} icon={step.icon} />
-              </div>
-              <span className="step-label">{step.label}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* ═══════════════════════════════════════════════════════════════ */}
-        {/* CONTROL PANEL - Selector de dataset y botones de acción */}
-        {/* ═══════════════════════════════════════════════════════════════ */}
-        <div className="control-panel">
-          {/* Selector de dataset */}
-          <div className="control-left">
-            <label htmlFor="dataset-select">Dataset de análisis</label>
+      <main className="analysis-main" style={{ padding: '2rem' }}>
+        <section className="admin-card">
+          <h3 style={{ color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.85rem' }}>DATASET DE ANALISIS</h3>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
             <select
-              id="dataset-select"
-              className="dataset-select"
-              value={dataset}
-              onChange={e => setDataset(e.target.value)}
-              disabled={isRunning || currentStepCompleted(1)}
+              value={datasetId}
+              onChange={(e) => { setDatasetId(e.target.value); setZones([]); }}
+              style={{ flex: '1 1 320px', minWidth: 280, padding: '0.6rem 0.85rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', color: '#f1f5f9', borderRadius: 10 }}
             >
-              {datasets.map(d => (
-                <option key={d.id} value={d.id}>{d.label}</option>
-              ))}
+              {datasets.map((d) => <option key={d.id} value={d.id} style={{ background: '#1e293b', color: '#f1f5f9' }}>{d.label}</option>)}
             </select>
-          </div>
-
-          {/* Botones de acción según el paso actual */}
-          <div className="control-actions">
-            {/* Paso 1: Cargar datos - Solo visible si no está completado */}
-            {!currentStepCompleted(1) && (
-              <button
-                id="btn-load"
-                className="btn-action btn-validate"
-                onClick={handleLoad}
-                disabled={isRunning}
-              >
-                {steps[0].status === 'processing' && <span className="btn-spinner" />}
-                📂 Cargar datos
-              </button>
-            )}
-
-            {/* Paso 2: Validar - Visible después de completar paso 1 */}
-            {currentStepCompleted(1) && !currentStepCompleted(2) && (
-              <button
-                id="btn-validate"
-                className="btn-action btn-validate"
-                onClick={handleValidate}
-                disabled={isRunning}
-              >
-                {steps[1].status === 'processing' && <span className="btn-spinner" />}
-                🔍 Validar
-              </button>
-            )}
-
-            {/* Paso 3: Transformar - Visible después de completar paso 2 */}
-            {currentStepCompleted(2) && !currentStepCompleted(3) && (
-              <button
-                id="btn-transform"
-                className="btn-action btn-transform"
-                onClick={handleTransform}
-                disabled={isRunning}
-              >
-                {steps[2].status === 'processing' && <span className="btn-spinner" />}
-                ⚙️ Transformar
-              </button>
-            )}
-
-            {/* Paso 4: Calcular score - Visible después de completar paso 3 */}
-            {currentStepCompleted(3) && !currentStepCompleted(4) && (
-              <button
-                id="btn-score"
-                className="btn-action btn-score"
-                onClick={handleScore}
-                disabled={isRunning}
-              >
-                {steps[3].status === 'processing' && <span className="btn-spinner" />}
-                📊 Calcular Score
-              </button>
-            )}
-
-            {/* Botón de reinicio - Siempre visible */}
-            <button
-              id="btn-reset"
-              className="btn-action btn-reset"
-              onClick={handleReset}
-              disabled={isRunning}
-            >
-              ↺ Reiniciar
+            <label className="admin-btn-secondary" style={{ cursor: 'pointer', background: 'rgba(255,255,255,0.1)', color: '#fff', border: 'none', borderRadius: '10px', padding: '0.6rem 1rem' }}>
+              Cargar archivo
+              <input type="file" hidden accept=".csv,.json" onChange={handleFileLoad} />
+            </label>
+            <button className="admin-btn-primary" onClick={handleReset} disabled={running} style={{ background: '#6366f1', color: '#fff', border: 'none', borderRadius: '10px', padding: '0.6rem 1rem', cursor: 'pointer' }}>
+              {running ? 'Calculando...' : 'Reiniciar / Recalcular'}
             </button>
           </div>
+        </section>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 320px', gap: 16, marginTop: 16 }}>
+          <section className="admin-card" style={{ padding: '1.5rem' }}>
+            <h2 style={{ color: '#f1f5f9', marginBottom: 4 }}>Top 10 Zonas por Score</h2>
+            <p style={{ color: '#94a3b8', marginTop: 0, marginBottom: 16 }}>
+              Pasa el cursor sobre cada barra para ver el detalle de la zona.
+            </p>
+            <div style={{ width: '100%', height: 380 }} onMouseLeave={() => setHoverIdx(null)}>
+              <ResponsiveContainer>
+                <BarChart data={chartData} margin={{ top: 10, right: 20, bottom: 60, left: 0 }} onMouseMove={(state) => {
+                  if (state && state.activeTooltipIndex !== undefined && state.activeTooltipIndex !== null) {
+                    setHoverIdx(state.activeTooltipIndex);
+                  }
+                }}>
+                  <CartesianGrid stroke="rgba(255,255,255,0.05)" />
+                  <XAxis dataKey="name" stroke="#94a3b8" interval={0} angle={-30} textAnchor="end" tickMargin={8} fontSize={11} />
+                  <YAxis stroke="#94a3b8" domain={[0, 100]} />
+                  <Tooltip cursor={{ fill: 'rgba(255,255,255,0.04)' }} contentStyle={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8 }} />
+                  <Bar dataKey="score" radius={[8, 8, 0, 0]} onClick={(_, idx) => setPinnedIdx(idx)}>
+                    {chartData.map((d) => (
+                      <Cell key={d.name} fill={getBarColor(d.score)} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </section>
+
+          {activeZone ? (
+            <ZoneDetailCard zone={activeZone} rank={activeIdx ?? 0} onClose={pinnedIdx != null ? () => setPinnedIdx(null) : undefined} />
+          ) : (
+            <div className="admin-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', textAlign: 'center', padding: '2rem' }}>
+              Pasa el cursor sobre una barra para ver el detalle de la zona.
+            </div>
+          )}
         </div>
 
-        {/* ═══════════════════════════════════════════════════════════════ */}
-        {/* RESULTADOS - Gráfico y heatmap (solo cuando todo completado) */}
-        {/* ═══════════════════════════════════════════════════════════════ */}
-        {allCompleted && zones.length > 0 ? (
-          <>
-            {/* Grid de resultados: gráfico + detalle */}
-            <div className={`results-grid ${!selectedZone ? 'no-detail' : ''}`}>
-              {/* Gráfico de barras - Top 10 zonas */}
-              <div className="glass-card chart-section">
-                <div className="card-title">Top 10 Zonas por Score</div>
-                <div className="card-subtitle">Haz clic en una barra para ver el detalle de la zona</div>
-                <ResponsiveContainer width="100%" height={320}>
-                  <BarChart data={top10} margin={{ top: 5, right: 10, left: -20, bottom: 60 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                    <XAxis
-                      dataKey="name"
-                      tick={{ fill: '#64748b', fontSize: 11 }}
-                      angle={-35}
-                      textAnchor="end"
-                      interval={0}
-                    />
-                    <YAxis tick={{ fill: '#64748b', fontSize: 11 }} domain={[0, 100]} />
-                    <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
-                    <Bar dataKey="score" radius={[6, 6, 0, 0]} cursor="pointer"
-                      onClick={(data, index) => setSelectedZone({ zone: zones[index], rank: index })}>
-                      {top10.map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={getBarColor(entry.score)}
-                          opacity={selectedZone?.rank === index ? 1 : 0.8}
-                        />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-                <p className="chart-hint">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
-                  </svg>
-                  Haz clic en cualquier barra para ver el detalle
-                </p>
-              </div>
-
-              {/* Card de detalle de zona - Solo visible si hay una zona seleccionada */}
-              {selectedZone && (
-                <ZoneDetailCard
-                  zone={selectedZone.zone}
-                  rank={selectedZone.rank}
-                  onClose={() => setSelectedZone(null)}
-                />
-              )}
-            </div>
-
-            {/* Mapa de calor de indicadores */}
+        {zones.length > 0 && (
+          <div style={{ marginTop: 16 }}>
             <HeatmapTable zones={zones} />
-          </>
-        ) : (
-          // Estado vacío: cuando el flujo no está completo
-          !allCompleted && (
-            <div className="glass-card empty-results">
-              <div className="empty-icon">📊</div>
-              <div>
-                <strong>Sin resultados aún</strong>
-                <p>Completa el flujo guiado de pasos para visualizar el análisis territorial.</p>
-              </div>
-            </div>
-          )
+            <RecommendationsSection zones={zones} />
+          </div>
         )}
       </main>
     </div>

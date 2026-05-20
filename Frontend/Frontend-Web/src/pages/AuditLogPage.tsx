@@ -20,7 +20,7 @@ const AuditLogPage: React.FC = () => {
   const { username, role, logout, token } = useAuth();
   const navigate = useNavigate();
 
-  const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+  const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
 
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(false);
@@ -291,15 +291,17 @@ const AuditLogPage: React.FC = () => {
             <pre
               style={{
                 margin: 0,
-                padding: '1rem',
-                borderRadius: '12px',
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                color: '#e2e8f0',
-                maxHeight: '60vh',
+                padding: '1.25rem',
+                borderRadius: '8px',
+                background: '#0f172a',
+                border: '1px solid rgba(255,255,255,0.1)',
+                color: '#38bdf8',
+                maxHeight: '55vh',
                 overflow: 'auto',
                 whiteSpace: 'pre-wrap',
                 wordBreak: 'break-word',
+                fontFamily: 'Consolas, monospace',
+                fontSize: '0.9rem'
               }}
             >
               {detailsText}

@@ -247,3 +247,28 @@
     transform: rotate(360deg);
   }
 }
+.form-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 1rem;
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+.link-button {
+  background: none;
+  border: none;
+  color: #818cf8;
+  cursor: pointer;
+  font-weight: 600;
+  padding: 0;
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+
+.link-button:hover {
+  color: #a5b4fc;
+  text-decoration: underline;
+}

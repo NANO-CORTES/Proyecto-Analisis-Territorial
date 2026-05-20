@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
 
 function getAuthHeaders(): HeadersInit {
     const token = localStorage.getItem('token');
@@ -19,7 +19,7 @@ export interface UserData {
 }
 
 export async function fetchUsers(): Promise<UserData[]> {
-    const res = await fetch(`${API_BASE}/api/v1/admin/users`, {
+    const res = await fetch(`${API_BASE}/api/v1/admin/users/`, {
         headers: getAuthHeaders(),
     });
     if (!res.ok) throw new Error((await res.json()).detail || 'Error al obtener usuarios');
@@ -32,7 +32,7 @@ export async function createUser(data: {
     password: string;
     role: string;
 }): Promise<UserData> {
-    const res = await fetch(`${API_BASE}/api/v1/admin/users`, {
+    const res = await fetch(`${API_BASE}/api/v1/admin/users/`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify(data),
@@ -46,7 +46,7 @@ export async function updateUser(
     data: { role?: string; is_active?: boolean }
 ): Promise<UserData> {
     const res = await fetch(`${API_BASE}/api/v1/admin/users/${userId}`, {
-        method: 'PUT',
+        method: 'PATCH',
         headers: getAuthHeaders(),
         body: JSON.stringify(data),
     });
